@@ -194,7 +194,12 @@ fn handle_callback(stream: TcpStream, expected_code: &str) -> Result<Option<Stri
     };
 
     if route != "/callback" {
-        respond(&mut stream, 404, "Not found");
+        respond(
+            &mut stream,
+            404,
+            "Not found",
+            "The mobs CLI only answers its login callback here.",
+        );
         return Ok(None);
     }
 
@@ -213,7 +218,8 @@ fn handle_callback(stream: TcpStream, expected_code: &str) -> Result<Option<Stri
         respond(
             &mut stream,
             403,
-            "The pairing code did not match. Return to the terminal and retry mobs login.",
+            "The pairing code did not match",
+            "Return to the terminal and run mobs login again.",
         );
         return Ok(None);
     }
@@ -221,7 +227,8 @@ fn handle_callback(stream: TcpStream, expected_code: &str) -> Result<Option<Stri
         respond(
             &mut stream,
             400,
-            "The callback carried no key. Return to the terminal and retry mobs login.",
+            "The callback carried no key",
+            "Return to the terminal and run mobs login again.",
         );
         return Ok(None);
     };
@@ -229,12 +236,30 @@ fn handle_callback(stream: TcpStream, expected_code: &str) -> Result<Option<Stri
     respond(
         &mut stream,
         200,
-        "You are logged in. Return to the terminal; this tab can be closed.",
+        "You are logged in",
+        "Return to the terminal. This tab can be closed.",
     );
     Ok(Some(token))
 }
 
-fn respond(stream: &mut TcpStream, status: u16, message: &str) {
+/// The mob.so glyph, inlined because this page is served from 127.0.0.1 and
+/// loads no remote assets. `currentColor` picks up the scheme's ink.
+const BRAND_GLYPH: &str = "<svg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M8 0H16V8H24V0H32V8H40V40H0V8H8V0ZM8 24C11.2032 21.3782 12.9713 21.3074 16 24V32H8V24ZM24 24C27.2449 21.3941 28.9219 21.4813 32 24V32H24V24Z\" fill=\"currentColor\"/></svg>";
+
+/// Mirrors the mob.so console palette: chalk canvas, white card, dark ink,
+/// with the dark scheme following the browser preference.
+const PAGE_STYLE: &str = "\
+:root{color-scheme:light dark;--bg:#f6f4ee;--card:#ffffff;--ink:#17181a;--muted:#5f6670;--line:#deddd7;--shadow:0 12px 32px rgba(13,13,16,.07)}\
+@media (prefers-color-scheme:dark){:root{--bg:#141519;--card:#1e2025;--ink:#f4f5f7;--muted:#a6adb7;--line:#33363d;--shadow:0 12px 32px rgba(0,0,0,.5)}}\
+body{margin:0;min-height:100dvh;display:grid;place-items:center;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}\
+main{box-sizing:border-box;display:grid;gap:28px;justify-items:center;width:100%;max-width:28rem;padding:20px 20px 48px}\
+.brand{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:700;letter-spacing:-.04em}\
+.brand svg{display:block}\
+.card{box-sizing:border-box;width:100%;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}\
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em}\
+p{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted)}";
+
+fn respond(stream: &mut TcpStream, status: u16, title: &str, message: &str) {
     let reason = match status {
         200 => "OK",
         400 => "Bad Request",
@@ -242,7 +267,7 @@ fn respond(stream: &mut TcpStream, status: u16, message: &str) {
         _ => "Not Found",
     };
     let body = format!(
-        "<!doctype html><html><head><title>mob CLI</title></head><body style=\"font-family: system-ui; margin: 4rem auto; max-width: 28rem;\"><p>{message}</p></body></html>"
+        "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>{title} | mob.so</title><style>{PAGE_STYLE}</style></head><body><main><div class=\"brand\">{BRAND_GLYPH}<span>mob.so</span></div><div class=\"card\"><h1>{title}</h1><p>{message}</p></div></main></body></html>"
     );
     let response = format!(
         "HTTP/1.1 {status} {reason}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
