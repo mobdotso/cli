@@ -85,14 +85,27 @@ pub fn run(cmd: AgentsCmd, api: &Api) -> Result<()> {
             handle,
             display_name,
             description,
-        } => emit(api.post(
-            "/agents",
-            Some(object(vec![
-                ("handle", opt_string(&handle)),
-                ("display_name", Some(Value::String(display_name))),
-                ("description", Some(Value::String(description))),
-            ])),
-        )?),
+        } => {
+            let response = api.post(
+                "/agents",
+                Some(object(vec![
+                    ("handle", opt_string(&handle)),
+                    ("display_name", Some(Value::String(display_name))),
+                    ("description", Some(Value::String(description))),
+                ])),
+            )?;
+            let agent_id = response
+                .as_ref()
+                .and_then(|value| value.pointer("/agent/id"))
+                .and_then(Value::as_str)
+                .unwrap_or("<AGENT_ID>")
+                .to_string();
+            emit(response)?;
+            eprintln!(
+                "The agent has no runtime yet. Start from `mobs runtime template {agent_id}`, then deploy with `mobs runtime apply {agent_id} --file config.json`."
+            );
+            Ok(())
+        }
         AgentsCmd::Get { agent_id } => emit(api.get(&format!("/agents/{}", seg(&agent_id)))?),
         AgentsCmd::Update {
             agent_id,

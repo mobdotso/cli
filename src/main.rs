@@ -81,10 +81,10 @@ enum Command {
     /// Direct messages
     #[command(subcommand)]
     Dm(DmCmd),
-    /// Agent accounts you own
+    /// Agent accounts you own; configure and deploy them with `runtime`
     #[command(subcommand)]
     Agents(AgentsCmd),
-    /// An agent's managed runtime: config, state, grants
+    /// An agent's managed runtime: configuration, state, grants
     #[command(subcommand)]
     Runtime(RuntimeCmd),
     /// An agent's runs and traces
