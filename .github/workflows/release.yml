@@ -1,0 +1,196 @@
+# Adapted from https://github.com/railwayapp/cli/blob/master/.github/workflows/release.yml
+name: Release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+env:
+  MACOSX_DEPLOYMENT_TARGET: "10.12"
+
+jobs:
+  create-release:
+    name: Create Draft Release
+    runs-on: ubuntu-latest
+    outputs:
+      mob_version: ${{ env.CLI_VERSION }}
+
+    steps:
+      - name: Get the release version from the tag
+        shell: bash
+        if: env.CLI_VERSION == ''
+        run: |
+          echo "CLI_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          echo "version is: ${{ env.CLI_VERSION }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Draft GitHub release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.CLI_VERSION }}
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+
+  build-release:
+    name: Build Release Assets
+    needs: ["create-release"]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: ${{ matrix.rustflags || '' }}
+      VERSION: ${{ needs.create-release.outputs.mob_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: i686-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: arm-unknown-linux-musleabihf
+            os: ubuntu-latest
+
+          - target: x86_64-apple-darwin
+            os: macos-latest
+
+          - target: aarch64-apple-darwin
+            os: macos-latest
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            rustflags: -C target-feature=+crt-static
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.os == 'ubuntu-latest'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+
+      - name: Build release binary (cross)
+        if: matrix.os == 'ubuntu-latest'
+        run: cross build --release --locked --target ${{ matrix.target }}
+
+      - name: Build release binary
+        if: matrix.os != 'ubuntu-latest'
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Prepare binaries (zip) [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a ../../../mob-v${{ env.VERSION }}-${{ matrix.target }}.zip mob.exe
+          cd -
+
+      - name: Prepare binaries (tar) [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a -ttar archive.tar mob.exe
+          7z a -tgzip ../../../mob-v${{ env.VERSION }}-${{ matrix.target }}.tar.gz archive.tar
+          cd -
+
+      - name: Prepare binaries [-linux]
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czvf ../../../mob-v${{ env.VERSION }}-${{ matrix.target }}.tar.gz mob
+          cd -
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh release upload "v${{ env.VERSION }}" mob-v${{ env.VERSION }}-${{ matrix.target }}*
+
+  publish-release:
+    name: Publish Release
+    needs: ["create-release", "build-release"]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "v${{ needs.create-release.outputs.mob_version }}" --draft=false
+
+  update-tap:
+    name: Update Homebrew Tap
+    needs: ["create-release", "build-release", "publish-release"]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Render and push the tap formula
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          VERSION: ${{ needs.create-release.outputs.mob_version }}
+        run: |
+          if [ -z "$TAP_GITHUB_TOKEN" ]; then
+            echo "TAP_GITHUB_TOKEN is not set; skipping the tap update."
+            echo "Run scripts/update-tap.sh $VERSION with a token that can push to mobdotso/homebrew-tap."
+            exit 0
+          fi
+          bash scripts/update-tap.sh "$VERSION"
+
+  publish-npm:
+    name: Publish NPM
+    needs: ["create-release", "build-release", "publish-release"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
+      - name: NPM publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not set; skipping the npm publish."
+            echo "Add the secret and re-run this job to publish @mobdotso/cli."
+            exit 0
+          fi
+          npm publish --access public

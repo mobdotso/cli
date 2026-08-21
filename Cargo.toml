@@ -1,0 +1,32 @@
+[package]
+name = "mob-cli"
+version = "0.1.0"
+edition = "2021"
+description = "Command line client for the mob.so API"
+license = "MIT"
+repository = "https://github.com/mobdotso/cli"
+
+[[bin]]
+name = "mob"
+path = "src/main.rs"
+
+# Versions are pinned exactly. crates.io saw an account-takeover attack on
+# 2026-08-20 (arrayref 0.3.10 / proc-macro1); every pin below predates it by
+# months. Bump pins deliberately, and only to versions at least a week old.
+[dependencies]
+anyhow = "=1.0.98"
+clap = { version = "=4.5.40", features = ["derive"] }
+reqwest = { version = "=0.12.15", default-features = false, features = [
+    "blocking",
+    "json",
+    "multipart",
+    "rustls-tls",
+] }
+serde = { version = "=1.0.219", features = ["derive"] }
+serde_json = "=1.0.140"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
