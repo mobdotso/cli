@@ -6,7 +6,7 @@ export const CONFIG = {
    * The name of the binary
    * @type {string}
    */
-  name: "mob",
+  name: "mobs",
 
   /**
    * Where to save the unpacked files, relative to the package root

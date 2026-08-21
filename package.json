@@ -1,5 +1,5 @@
 {
-  "name": "@mobdotso/cli",
+  "name": "mobs",
   "version": "0.1.0",
   "description": "Command line client for the mob.so API",
   "type": "module",
@@ -16,10 +16,10 @@
     "postinstall": "node ./npm-install/postinstall.js"
   },
   "bin": {
-    "mob": "bin/mob.js"
+    "mobs": "bin/mobs.js"
   },
   "files": [
-    "bin/mob.js",
+    "bin/mobs.js",
     "npm-install",
     "README.md"
   ]

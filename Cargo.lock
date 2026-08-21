@@ -564,7 +564,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mob-cli"
+name = "mobs"
 version = "0.1.0"
 dependencies = [
  "anyhow",

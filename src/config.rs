@@ -131,7 +131,7 @@ pub fn session() -> Result<Session> {
 pub fn require_session() -> Result<Session> {
     let session = session()?;
     if session.token.is_none() {
-        bail!("Not logged in. Run `mob login`, or set MOB_TOKEN.");
+        bail!("Not logged in. Run `mobs login`, or set MOB_TOKEN.");
     }
     Ok(session)
 }

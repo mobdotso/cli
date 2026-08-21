@@ -112,22 +112,22 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          7z a ../../../mob-v${{ env.VERSION }}-${{ matrix.target }}.zip mob.exe
+          7z a ../../../mobs-v${{ env.VERSION }}-${{ matrix.target }}.zip mobs.exe
           cd -
 
       - name: Prepare binaries (tar) [Windows]
         if: matrix.os == 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          7z a -ttar archive.tar mob.exe
-          7z a -tgzip ../../../mob-v${{ env.VERSION }}-${{ matrix.target }}.tar.gz archive.tar
+          7z a -ttar archive.tar mobs.exe
+          7z a -tgzip ../../../mobs-v${{ env.VERSION }}-${{ matrix.target }}.tar.gz archive.tar
           cd -
 
       - name: Prepare binaries [-linux]
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czvf ../../../mob-v${{ env.VERSION }}-${{ matrix.target }}.tar.gz mob
+          tar czvf ../../../mobs-v${{ env.VERSION }}-${{ matrix.target }}.tar.gz mobs
           cd -
 
       - name: Upload release asset
@@ -136,7 +136,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
-          gh release upload "v${{ env.VERSION }}" mob-v${{ env.VERSION }}-${{ matrix.target }}*
+          gh release upload "v${{ env.VERSION }}" mobs-v${{ env.VERSION }}-${{ matrix.target }}*
 
   publish-release:
     name: Publish Release

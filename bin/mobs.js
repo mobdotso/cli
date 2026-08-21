@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const binName = process.platform === "win32" ? "mob.exe" : "mob";
+const binName = process.platform === "win32" ? "mobs.exe" : "mobs";
 const binPath = path.resolve(__dirname, binName);
 
 try {
@@ -18,9 +18,9 @@ try {
   // spawn fails with ENOENT; say so instead of exiting 1 with no output.
   if (e.code === "ENOENT") {
     console.error(
-      `mob: could not find the CLI binary at ${binPath}\n` +
-        `The @mobdotso/cli install step did not complete. Try:\n` +
-        `  npm install -g @mobdotso/cli --foreground-scripts\n` +
+      `mobs: could not find the CLI binary at ${binPath}\n` +
+        `The mobs install step did not complete. Try:\n` +
+        `  npm install -g mobs --foreground-scripts\n` +
         `or install the CLI directly:\n` +
         `  curl -fsSL https://mob.so/install.sh | sh`,
     );

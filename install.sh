@@ -25,7 +25,7 @@ help_text="Options
   Override the base URL used for downloading releases
 
   -r, --remove
-  Uninstall mob
+  Uninstall mobs
 
   -h, --help
   Get some help
@@ -84,9 +84,9 @@ RANDOM_FOR_SH=$(echo ${RANDOM_FOR_SH:-$$})
 get_tmpfile() {
   suffix="$1"
   if has mktemp; then
-    printf "%s%s.%s.%s" "$(mktemp)" "-mob" "${RANDOM_FOR_SH}" "${suffix}"
+    printf "%s%s.%s.%s" "$(mktemp)" "-mobs" "${RANDOM_FOR_SH}" "${suffix}"
   else
-    printf "/tmp/mob.%s" "${suffix}"
+    printf "/tmp/mobs.%s" "${suffix}"
   fi
 }
 
@@ -212,7 +212,7 @@ download() {
 
   error "Command failed (exit code $rc): ${BLUE}${cmd}${NO_COLOR}"
   printf "\n" >&2
-  info "This is likely due to mob not yet supporting your configuration."
+  info "This is likely due to mobs not yet supporting your configuration."
   info "If you would like to see a build for your configuration,"
   info "please create an issue requesting a build for ${MAGENTA}${TARGET}${NO_COLOR}:"
   info "${BOLD}${UNDERLINE}https://github.com/mobdotso/cli/issues/new/${NO_COLOR}"
@@ -264,12 +264,12 @@ install() {
 
   if test_writeable "${BIN_DIR}"; then
     sudo=""
-    msg="Installing mob, please wait…"
+    msg="Installing mobs, please wait…"
   else
     warn "Escalated permissions are required to install to ${BIN_DIR}"
     elevate_priv
     sudo="sudo"
-    msg="Installing mob as root, please wait…"
+    msg="Installing mobs as root, please wait…"
   fi
   info "$msg"
 
@@ -397,7 +397,7 @@ is_build_available() {
   )
 
   if [ "${good}" != "1" ]; then
-    error "${arch} builds for ${platform} are not yet available for mob"
+    error "${arch} builds for ${platform} are not yet available for mobs"
     printf "\n" >&2
     info "If you would like to see a build for your configuration,"
     info "please create an issue requesting a build for ${MAGENTA}${target}${NO_COLOR}:"
@@ -413,8 +413,8 @@ MOB_HOME_DIR=""
 MOB_ENV_FILE=""
 MOB_FISH_ENV_FILE=""
 PATH_ACTIVATION_PRINTED=0
-MOB_PATH_MARKER_BEGIN="# >>> mob initialize >>>"
-MOB_PATH_MARKER_END="# <<< mob initialize <<<"
+MOB_PATH_MARKER_BEGIN="# >>> mobs initialize >>>"
+MOB_PATH_MARKER_END="# <<< mobs initialize <<<"
 SHELL_STARTUP_FILE=""
 SHELL_STARTUP_ACTION=""
 
@@ -431,7 +431,7 @@ resolve_mob_version() {
     | grep -o '"tag_name":[[:space:]]*"v[^"]*"' | cut -d'"' -f4 | cut -c2-) || true
 
   if [ -z "$MOB_VERSION" ]; then
-    error "Could not determine the latest mob CLI version from GitHub."
+    error "Could not determine the latest mobs CLI version from GitHub."
     info "This is usually a transient network failure, or GitHub's unauthenticated"
     info "API rate limit (60 requests/hour per IP) on a shared runner."
     info "Pin a version to skip this lookup entirely:"
@@ -766,51 +766,51 @@ $fish_line"
     startup_contents="$activation"
   fi
 
-  warn "mob was installed to $(tildify "$BIN_DIR"), but this shell does not resolve 'mob' from there yet."
+  warn "mobs was installed to $(tildify "$BIN_DIR"), but this shell does not resolve 'mobs' from there yet."
   if configure_shell_startup "$startup_contents"; then
-    info "$SHELL_STARTUP_ACTION mob PATH setup in $(tildify "$SHELL_STARTUP_FILE")"
-    info "New terminals will have mob available automatically."
+    info "$SHELL_STARTUP_ACTION mobs PATH setup in $(tildify "$SHELL_STARTUP_FILE")"
+    info "New terminals will have mobs available automatically."
   else
-    info "To make mob available in new terminals, add this command to your shell startup file:"
+    info "To make mobs available in new terminals, add this command to your shell startup file:"
     print_path_commands "$startup_contents"
   fi
-  info "To use mob in this terminal, run:"
+  info "To use mobs in this terminal, run:"
   print_path_commands "$path_commands"
   PATH_ACTIVATION_PRINTED=1
 }
 
 if [ "$UNINSTALL" = 1 ]; then
-  confirm "Are you sure you want to uninstall mob?"
+  confirm "Are you sure you want to uninstall mobs?"
 
   msg=""
   sudo=""
-  mob_bin="$(command -v mob 2>/dev/null || true)"
+  mob_bin="$(command -v mobs 2>/dev/null || true)"
 
-  if [ -z "$mob_bin" ] && [ -x "$BIN_DIR/mob" ]; then
-    mob_bin="$BIN_DIR/mob"
+  if [ -z "$mob_bin" ] && [ -x "$BIN_DIR/mobs" ]; then
+    mob_bin="$BIN_DIR/mobs"
   fi
 
   if [ -z "$mob_bin" ]; then
-    error "Could not find mob on PATH or at $BIN_DIR/mob"
+    error "Could not find mobs on PATH or at $BIN_DIR/mobs"
     exit 1
   fi
 
-  info "REMOVING mob"
+  info "REMOVING mobs"
 
   if test_writeable "$(dirname "$mob_bin")"; then
     sudo=""
-    msg="Removing mob, please wait…"
+    msg="Removing mobs, please wait…"
   else
     warn "Escalated permissions are required to remove ${mob_bin}"
     elevate_priv
     sudo="sudo"
-    msg="Removing mob as root, please wait…"
+    msg="Removing mobs as root, please wait…"
   fi
 
   info "$msg"
   ${sudo} rm "$mob_bin"
 
-  info "Removed mob"
+  info "Removed mobs"
   exit 0
 fi
 
@@ -839,14 +839,14 @@ case "${PLATFORM}" in
   pc-windows-msvc) EXT=zip ;;
 esac
 
-URL="${BASE_URL}/download/v${MOB_VERSION}/mob-v${MOB_VERSION}-${TARGET}.${EXT}"
+URL="${BASE_URL}/download/v${MOB_VERSION}/mobs-v${MOB_VERSION}-${TARGET}.${EXT}"
 debug "Tarball URL: ${UNDERLINE}${BLUE}${URL}${NO_COLOR}"
-confirm "Install mob ${GREEN}latest${NO_COLOR} to ${BOLD}${GREEN}${BIN_DIR}${NO_COLOR}?"
+confirm "Install mobs ${GREEN}latest${NO_COLOR} to ${BOLD}${GREEN}${BIN_DIR}${NO_COLOR}?"
 check_bin_dir "${BIN_DIR}" || true
 
 write_env_files
 install "${EXT}"
-completed "mob v${MOB_VERSION} installed"
+completed "mobs v${MOB_VERSION} installed"
 
 if ! check_bin_dir "${BIN_DIR}"; then
   configure_shell_path
@@ -854,7 +854,7 @@ fi
 
 if [ "$PATH_ACTIVATION_PRINTED" = 0 ]; then
   printf '\n'
-  info "Run ${BOLD}mob login${NO_COLOR} to connect your mob.so account."
+  info "Run ${BOLD}mobs login${NO_COLOR} to connect your mob.so account."
 fi
 
 printf '\n'

@@ -42,10 +42,10 @@ function resolveTarget() {
       .flatMap(([p, arches]) => Object.keys(arches).map((a) => `${p}-${a}`))
       .join(", ");
     throw new Error(
-      `The mob CLI does not ship a prebuilt binary for ${platform}-${arch}.\n` +
+      `The mobs CLI does not ship a prebuilt binary for ${platform}-${arch}.\n` +
         `Supported: ${supported}\n` +
         `Request a build at https://github.com/mobdotso/cli/issues/new, ` +
-        `or build from source with \`cargo install mob-cli\`.`,
+        `or build from source with \`cargo install mobs\`.`,
     );
   }
 
@@ -91,11 +91,11 @@ async function install() {
   execFileSync("tar", ["-xzf", tarFile, "-C", destDir], { stdio: "inherit" });
   await fs.rm(tarFile);
 
-  // Fail loudly here rather than leaving a package whose `mob` shim exits
+  // Fail loudly here rather than leaving a package whose `mobs` shim exits
   // with a confusing ENOENT on first use.
   const expected = path.join(
     destDir,
-    process.platform === "win32" ? "mob.exe" : "mob",
+    process.platform === "win32" ? "mobs.exe" : "mobs",
   );
   await fs.access(expected).catch(() => {
     throw new Error(`Archive did not contain the expected binary at ${expected}`);

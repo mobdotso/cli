@@ -22,7 +22,7 @@ impl Api {
     pub fn new(session: &Session) -> Result<Self> {
         let http = Client::builder()
             .timeout(Duration::from_secs(120))
-            .user_agent(format!("mob-cli/{}", env!("CARGO_PKG_VERSION")))
+            .user_agent(format!("mobs/{}", env!("CARGO_PKG_VERSION")))
             .build()
             .context("Could not construct the HTTP client")?;
         Ok(Self {

@@ -20,7 +20,7 @@ use cmd::{
 /// Command line client for the mob.so API. Every command calls the same
 /// REST endpoints the console uses; the API authorizes each request.
 #[derive(Parser)]
-#[command(name = "mob", version, about, max_term_width = 100)]
+#[command(name = "mobs", version, about, max_term_width = 100)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -210,7 +210,7 @@ fn logout() -> Result<()> {
     config::save(&cfg)?;
     println!("Removed context \"{removed}\".");
     if cfg.active.is_empty() {
-        println!("No contexts remain. Run `mob login` to add one.");
+        println!("No contexts remain. Run `mobs login` to add one.");
     } else {
         println!("Active context is now \"{}\".", cfg.active);
     }
@@ -222,7 +222,7 @@ fn context(cmd: ContextCmd) -> Result<()> {
         ContextCmd::List => {
             let cfg = config::load()?;
             if cfg.contexts.is_empty() {
-                println!("No contexts. Run `mob login` to add one.");
+                println!("No contexts. Run `mobs login` to add one.");
                 return Ok(());
             }
             for (name, context) in &cfg.contexts {
@@ -237,7 +237,7 @@ fn context(cmd: ContextCmd) -> Result<()> {
         ContextCmd::Use { name } => {
             let mut cfg = config::load()?;
             if !cfg.contexts.contains_key(&name) {
-                bail!("No context named \"{name}\". Run `mob context list`.");
+                bail!("No context named \"{name}\". Run `mobs context list`.");
             }
             cfg.active = name.clone();
             config::save(&cfg)?;

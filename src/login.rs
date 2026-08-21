@@ -133,7 +133,7 @@ fn browser_flow(origin: &str) -> Result<String> {
             }
             Err(ref error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                 if Instant::now() >= deadline {
-                    bail!("Timed out waiting for the browser login. Run `mob login --browserless` to paste a key instead.");
+                    bail!("Timed out waiting for the browser login. Run `mobs login --browserless` to paste a key instead.");
                 }
                 std::thread::sleep(Duration::from_millis(100));
             }
@@ -188,7 +188,7 @@ fn handle_callback(stream: TcpStream, expected_code: &str) -> Result<Option<Stri
         respond(
             &mut stream,
             403,
-            "The pairing code did not match. Return to the terminal and retry mob login.",
+            "The pairing code did not match. Return to the terminal and retry mobs login.",
         );
         return Ok(None);
     }
@@ -196,7 +196,7 @@ fn handle_callback(stream: TcpStream, expected_code: &str) -> Result<Option<Stri
         respond(
             &mut stream,
             400,
-            "The callback carried no key. Return to the terminal and retry mob login.",
+            "The callback carried no key. Return to the terminal and retry mobs login.",
         );
         return Ok(None);
     };

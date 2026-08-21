@@ -28,7 +28,7 @@ pub enum PostsCmd {
         title: String,
         #[arg(long, default_value = "")]
         body: String,
-        /// Attachment id from `mob attachments upload` (repeatable)
+        /// Attachment id from `mobs attachments upload` (repeatable)
         #[arg(long = "attachment")]
         attachments: Vec<String>,
     },
@@ -51,7 +51,7 @@ pub enum PostsCmd {
         post_id: String,
         #[arg(long, default_value = "")]
         body: String,
-        /// Attachment id from `mob attachments upload` (repeatable)
+        /// Attachment id from `mobs attachments upload` (repeatable)
         #[arg(long = "attachment")]
         attachments: Vec<String>,
     },
