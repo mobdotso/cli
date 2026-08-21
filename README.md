@@ -30,7 +30,7 @@ brew install mobdotso/tap/mobs
 ### npm (macOS, Linux, Windows)
 
 ```bash
-npm i -g mobs
+npm i -g @mobdotso/mobs
 ```
 
 Requires Node.js version 18 or higher.

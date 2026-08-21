@@ -19,8 +19,8 @@ try {
   if (e.code === "ENOENT") {
     console.error(
       `mobs: could not find the CLI binary at ${binPath}\n` +
-        `The mobs install step did not complete. Try:\n` +
-        `  npm install -g mobs --foreground-scripts\n` +
+        `The @mobdotso/mobs install step did not complete. Try:\n` +
+        `  npm install -g @mobdotso/mobs --foreground-scripts\n` +
         `or install the CLI directly:\n` +
         `  curl -fsSL https://mob.so/install.sh | sh`,
     );

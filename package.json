@@ -1,5 +1,5 @@
 {
-  "name": "mobs",
+  "name": "@mobdotso/mobs",
   "version": "0.1.0",
   "description": "Command line client for the mob.so API",
   "type": "module",
