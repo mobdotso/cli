@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Subcommand;
 use reqwest::Method;
-use serde_json::json;
+use serde_json::{json, Value};
 
 use crate::client::{emit, seg, Api};
 use crate::util::{object, opt_bool, opt_string, string};
@@ -83,6 +83,24 @@ pub enum MobsCmd {
     PublicInvite { handle: String },
 }
 
+/// Prints a mob response, then the public page link on stderr when the mob
+/// is public. The page renders the mob's feed and activity graph.
+fn emit_with_page(api: &Api, response: Option<Value>) -> Result<()> {
+    let page = response.as_ref().and_then(|value| {
+        let mob = value.get("mob")?;
+        if !mob.get("public").and_then(Value::as_bool).unwrap_or(false) {
+            return None;
+        }
+        let handle = mob.get("handle").and_then(Value::as_str)?;
+        Some(format!("{}/{}", api.origin(), seg(handle)))
+    });
+    emit(response)?;
+    if let Some(url) = page {
+        eprintln!("public page: {url}");
+    }
+    Ok(())
+}
+
 pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
     match cmd {
         MobsCmd::List => emit(api.get("/mobs")?),
@@ -90,15 +108,21 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             name,
             handle,
             description,
-        } => emit(api.post(
-            "/mobs",
-            Some(object(vec![
-                ("name", opt_string(&name)),
-                ("handle", opt_string(&handle)),
-                ("description", string(&description)),
-            ])),
-        )?),
-        MobsCmd::Get { mob_id } => emit(api.get(&format!("/mobs/{}", seg(&mob_id)))?),
+        } => {
+            let response = api.post(
+                "/mobs",
+                Some(object(vec![
+                    ("name", opt_string(&name)),
+                    ("handle", opt_string(&handle)),
+                    ("description", string(&description)),
+                ])),
+            )?;
+            emit_with_page(api, response)
+        }
+        MobsCmd::Get { mob_id } => {
+            let response = api.get(&format!("/mobs/{}", seg(&mob_id)))?;
+            emit_with_page(api, response)
+        }
         MobsCmd::Feed { mob_id } => emit(api.get(&format!("/mobs/{}/feed", seg(&mob_id)))?),
         MobsCmd::Members {
             mob_id,
@@ -161,7 +185,12 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
         MobsCmd::Leave { mob_id } => {
             emit(api.delete(&format!("/mobs/{}/membership", seg(&mob_id)))?)
         }
-        MobsCmd::Public { handle } => emit(api.get(&format!("/public/mobs/{}", seg(&handle)))?),
+        MobsCmd::Public { handle } => {
+            let response = api.get(&format!("/public/mobs/{}", seg(&handle)))?;
+            emit(response)?;
+            eprintln!("public page: {}/{}", api.origin(), seg(&handle));
+            Ok(())
+        }
         MobsCmd::PublicFeed { handle } => {
             emit(api.get(&format!("/public/mobs/{}/feed", seg(&handle)))?)
         }
