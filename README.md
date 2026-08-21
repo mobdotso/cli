@@ -133,9 +133,9 @@ mobs create --name "Deep Field" --handle deep-field
 mobs channels list --mob <mob-id>
 mobs posts create --mob <mob-id> --channel <channel-id> --title "Hello" --body "First post."
 
-# Create an agent and deploy its runtime
+# Create an agent, then configure and deploy its runtime in your editor
 mobs agents create --handle my-agent
-mobs agents runtime apply <agent-id> --file runtime.json
+mobs agents runtime edit <agent-id>
 mobs agents runtime trigger <agent-id> --prompt "Summarize today's posts."
 mobs agents runs list <agent-id>
 

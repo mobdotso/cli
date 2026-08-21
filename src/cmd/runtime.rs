@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use clap::Subcommand;
 use serde_json::{json, Value};
 
@@ -9,6 +9,11 @@ use crate::util::{object, opt_string, read_json_input, read_line_from_stdin, str
 pub enum RuntimeCmd {
     /// Show an agent's runtime, grants, and configuration options
     Get { agent_id: String },
+    /// Edit the runtime configuration in your editor and deploy it
+    ///
+    /// Opens the deployed configuration, or a default one for an agent
+    /// without a runtime. Saving and closing the editor deploys it.
+    Edit { agent_id: String },
     /// Apply a runtime configuration from a JSON document
     Apply {
         agent_id: String,
@@ -99,6 +104,7 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
         RuntimeCmd::Get { agent_id } => {
             emit(api.get(&format!("/agents/{}/runtime", seg(&agent_id)))?)
         }
+        RuntimeCmd::Edit { agent_id } => edit(api, &agent_id),
         RuntimeCmd::Apply { agent_id, file } => {
             let body = read_json_input(&file)?;
             emit(api.put(&format!("/agents/{}/runtime", seg(&agent_id)), Some(body))?)
@@ -118,6 +124,179 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
         )?),
         RuntimeCmd::Connections(cmd) => run_connections(cmd, api),
         RuntimeCmd::Secrets(cmd) => run_secrets(cmd, api),
+    }
+}
+
+/// Opens the runtime configuration in the user's editor and deploys the
+/// saved document. The buffer is seeded from the deployed runtime; an
+/// agent without one gets the API's defaults, the first model the
+/// instance offers, and a disabled trigger entry per mob so the mob ids
+/// are already in place.
+fn edit(api: &Api, agent_id: &str) -> Result<()> {
+    use std::io::IsTerminal;
+    if !std::io::stdin().is_terminal() {
+        bail!("`runtime edit` needs a terminal. In scripts, use `runtime apply --file`.");
+    }
+
+    let overview = api
+        .get(&format!("/agents/{}/runtime", seg(agent_id)))?
+        .context("The API returned an empty runtime overview")?;
+    let document = match overview.get("runtime") {
+        Some(runtime) if !runtime.is_null() => config_from_runtime(runtime),
+        _ => default_config(&overview),
+    };
+
+    if let Some(models) = overview
+        .pointer("/options/models")
+        .and_then(Value::as_array)
+    {
+        let names: Vec<&str> = models.iter().filter_map(Value::as_str).collect();
+        eprintln!("models: {}", names.join(", "));
+    }
+
+    let path = std::env::temp_dir().join(format!("mobs-runtime-{agent_id}.json"));
+    std::fs::write(&path, serde_json::to_string_pretty(&document)?)
+        .with_context(|| format!("Could not write {}", path.display()))?;
+
+    let editor = std::env::var("VISUAL")
+        .or_else(|_| std::env::var("EDITOR"))
+        .unwrap_or_else(|_| if cfg!(windows) { "notepad" } else { "vi" }.to_string());
+    let mut parts = editor.split_whitespace();
+    let program = parts.next().context("EDITOR is empty")?;
+    let status = std::process::Command::new(program)
+        .args(parts)
+        .arg(&path)
+        .status()
+        .with_context(|| format!("Could not run the editor ({editor})"))?;
+    if !status.success() {
+        bail!("The editor exited with an error; nothing was deployed");
+    }
+
+    let raw = std::fs::read_to_string(&path)
+        .with_context(|| format!("Could not read {}", path.display()))?;
+    let body: Value = serde_json::from_str(&raw)
+        .with_context(|| format!("{} is not valid JSON; fix it and rerun", path.display()))?;
+
+    let response = api
+        .put(&format!("/agents/{}/runtime", seg(agent_id)), Some(body))
+        .with_context(|| format!("The document was kept at {}", path.display()))?;
+    let _ = std::fs::remove_file(&path);
+    emit(response)
+}
+
+/// Projects a runtime response back into the request shape: server-assigned
+/// ids and display names go away, and direct message senders collapse to
+/// their handles.
+fn config_from_runtime(runtime: &Value) -> Value {
+    let arr = |key: &str| {
+        runtime
+            .get(key)
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+    };
+
+    let mob_triggers: Vec<Value> = arr("mob_triggers")
+        .iter()
+        .map(|trigger| {
+            let mut trigger = strip(trigger, &["mob_handle", "mob_name"]);
+            let rules: Vec<Value> = trigger
+                .get("rules")
+                .and_then(Value::as_array)
+                .map(|rules| rules.iter().map(|rule| strip(rule, &["id"])).collect())
+                .unwrap_or_default();
+            trigger["rules"] = Value::Array(rules);
+            trigger
+        })
+        .collect();
+
+    let workspace_grants: Vec<Value> = arr("workspace_grants")
+        .iter()
+        .filter_map(|grant| grant.get("path").cloned())
+        .map(|path| json!({ "path": path }))
+        .collect();
+
+    let sender_handles: Vec<Value> = runtime
+        .pointer("/direct_messages/senders")
+        .and_then(Value::as_array)
+        .map(|senders| {
+            senders
+                .iter()
+                .filter_map(|sender| sender.get("handle").cloned())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    json!({
+        "directive": runtime.get("directive").cloned().unwrap_or(Value::String(String::new())),
+        "model": runtime.get("model").cloned().unwrap_or(json!({ "name": "", "effort": "medium" })),
+        "resources": runtime.get("resources").cloned()
+            .unwrap_or(json!({ "max_run_duration_minutes": 15, "max_token_throughput": 60000 })),
+        "run_limits": arr("run_limits"),
+        "mob_triggers": mob_triggers,
+        "workspace_grants": workspace_grants,
+        "persistent_context": runtime.get("persistent_context").cloned()
+            .unwrap_or(json!({ "enabled": false, "retention_days": 30 })),
+        "browser": runtime.get("browser").cloned().unwrap_or(json!({ "enabled": false })),
+        "direct_messages": {
+            "sender_handles": sender_handles,
+            "send_to_owner": runtime
+                .pointer("/direct_messages/send_to_owner")
+                .cloned()
+                .unwrap_or(Value::Bool(false)),
+        },
+    })
+}
+
+fn default_config(overview: &Value) -> Value {
+    let model = overview
+        .pointer("/options/models")
+        .and_then(Value::as_array)
+        .and_then(|models| models.first())
+        .cloned()
+        .unwrap_or(Value::String(String::new()));
+    let mob_triggers: Vec<Value> = overview
+        .get("mobs")
+        .and_then(Value::as_array)
+        .map(|mobs| {
+            mobs.iter()
+                .filter_map(|mob| mob.get("mob_id").cloned())
+                .map(|mob_id| {
+                    json!({
+                        "mob_id": mob_id,
+                        "enabled": false,
+                        "participation": "mention_only",
+                        "idempotency_enabled": true,
+                        "max_consecutive_turns": 3,
+                        "rules": [],
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    json!({
+        "directive": "",
+        "model": { "name": model, "effort": "medium" },
+        "resources": { "max_run_duration_minutes": 15, "max_token_throughput": 60000 },
+        "run_limits": [],
+        "mob_triggers": mob_triggers,
+        "workspace_grants": [],
+        "persistent_context": { "enabled": false, "retention_days": 30 },
+        "browser": { "enabled": false },
+        "direct_messages": { "sender_handles": [], "send_to_owner": false },
+    })
+}
+
+/// Clones a JSON object without the named keys.
+fn strip(value: &Value, keys: &[&str]) -> Value {
+    match value {
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .filter(|(key, _)| !keys.contains(&key.as_str()))
+                .map(|(key, value)| (key.clone(), value.clone()))
+                .collect(),
+        ),
+        other => other.clone(),
     }
 }
 
