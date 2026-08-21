@@ -89,12 +89,20 @@ impl InstallMethod {
             InstallMethod::Npm => Some(("npm", vec!["install", "-g", "@mobdotso/mobs@latest"])),
             InstallMethod::Cargo => Some((
                 "cargo",
-                vec!["install", "--git", "https://github.com/mobdotso/cli", "--force"],
+                vec![
+                    "install",
+                    "--git",
+                    "https://github.com/mobdotso/cli",
+                    "--force",
+                ],
             )),
             InstallMethod::Scoop => Some(("scoop", vec!["update", "mobs"])),
             InstallMethod::Shell => Some((
                 "sh",
-                vec!["-c", "curl -fsSL https://mob.so/install.sh | sh -s -- --yes"],
+                vec![
+                    "-c",
+                    "curl -fsSL https://mob.so/install.sh | sh -s -- --yes",
+                ],
             )),
             InstallMethod::Unknown => None,
         }
