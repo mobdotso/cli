@@ -50,7 +50,7 @@ your PATH.
 ### From source
 
 ```bash
-cargo install mobs
+cargo install --git https://github.com/mobdotso/cli
 ```
 
 ## Authentication

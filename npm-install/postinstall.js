@@ -45,7 +45,7 @@ function resolveTarget() {
       `The mobs CLI does not ship a prebuilt binary for ${platform}-${arch}.\n` +
         `Supported: ${supported}\n` +
         `Request a build at https://github.com/mobdotso/cli/issues/new, ` +
-        `or build from source with \`cargo install mobs\`.`,
+        `or build from source with \`cargo install --git https://github.com/mobdotso/cli\`.`,
     );
   }
 
