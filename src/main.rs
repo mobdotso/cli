@@ -6,6 +6,7 @@ mod util;
 
 use anyhow::{bail, Context as _, Result};
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use serde_json::Value;
 
 use client::Api;
@@ -125,7 +126,7 @@ enum ContextCmd {
 
 fn main() {
     if let Err(error) = run() {
-        eprintln!("error: {error:#}");
+        eprintln!("{} {error:#}", "error:".red().bold());
         std::process::exit(1);
     }
 }
@@ -190,8 +191,8 @@ fn whoami() -> Result<()> {
         .context("The API returned an empty response for /auth/me")?;
     let handle = me.get("handle").and_then(Value::as_str).unwrap_or("");
     let kind = me.get("kind").and_then(Value::as_str).unwrap_or("user");
-    println!("@{handle} ({kind})");
-    println!("context: {context}");
+    println!("{} ({kind})", format!("@{handle}").bold());
+    println!("context: {}", context.bold());
     println!("origin:  {}", api.origin());
     if let Some(owner) = me.get("owner_account_id").and_then(Value::as_str) {
         println!("owner:   {owner}");
@@ -208,11 +209,14 @@ fn logout() -> Result<()> {
     cfg.contexts.remove(&removed);
     cfg.active = cfg.contexts.keys().next().cloned().unwrap_or_default();
     config::save(&cfg)?;
-    println!("Removed context \"{removed}\".");
+    println!("  {} Removed context {}.", "✓".green(), removed.bold());
     if cfg.active.is_empty() {
-        println!("No contexts remain. Run `mobs login` to add one.");
+        println!(
+            "No contexts remain. Run {} to add one.",
+            "mobs login".bold()
+        );
     } else {
-        println!("Active context is now \"{}\".", cfg.active);
+        println!("Active context is now {}.", cfg.active.bold());
     }
     Ok(())
 }
@@ -222,14 +226,18 @@ fn context(cmd: ContextCmd) -> Result<()> {
         ContextCmd::List => {
             let cfg = config::load()?;
             if cfg.contexts.is_empty() {
-                println!("No contexts. Run `mobs login` to add one.");
+                println!("No contexts. Run {} to add one.", "mobs login".bold());
                 return Ok(());
             }
             for (name, context) in &cfg.contexts {
-                let marker = if *name == cfg.active { "*" } else { " " };
+                let active = *name == cfg.active;
+                let marker = if active { "*".bold() } else { " ".normal() };
+                let shown_name = if active { name.bold() } else { name.normal() };
                 println!(
-                    "{marker} {name}  @{} ({})  {}",
-                    context.handle, context.kind, context.origin
+                    "{marker} {shown_name}  @{} ({})  {}",
+                    context.handle,
+                    context.kind,
+                    context.origin.dimmed()
                 );
             }
             Ok(())
@@ -241,7 +249,7 @@ fn context(cmd: ContextCmd) -> Result<()> {
             }
             cfg.active = name.clone();
             config::save(&cfg)?;
-            println!("Active context is now \"{name}\".");
+            println!("  {} Active context is now {}.", "✓".green(), name.bold());
             Ok(())
         }
         ContextCmd::Add {
@@ -263,7 +271,7 @@ fn context(cmd: ContextCmd) -> Result<()> {
                 cfg.active = cfg.contexts.keys().next().cloned().unwrap_or_default();
             }
             config::save(&cfg)?;
-            println!("Removed context \"{name}\".");
+            println!("  {} Removed context {}.", "✓".green(), name.bold());
             Ok(())
         }
     }

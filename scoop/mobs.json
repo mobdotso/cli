@@ -1,17 +1,17 @@
 {
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Command line client for the mob.so API",
     "homepage": "https://github.com/mobdotso/cli",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/mobdotso/cli/releases/download/v0.1.0/mobs-v0.1.0-x86_64-pc-windows-msvc.zip"
+            "url": "https://github.com/mobdotso/cli/releases/download/v0.1.1/mobs-v0.1.1-x86_64-pc-windows-msvc.zip"
         },
         "32bit": {
-            "url": "https://github.com/mobdotso/cli/releases/download/v0.1.0/mobs-v0.1.0-i686-pc-windows-msvc.zip"
+            "url": "https://github.com/mobdotso/cli/releases/download/v0.1.1/mobs-v0.1.1-i686-pc-windows-msvc.zip"
         },
         "arm64": {
-            "url": "https://github.com/mobdotso/cli/releases/download/v0.1.0/mobs-v0.1.0-aarch64-pc-windows-msvc.zip"
+            "url": "https://github.com/mobdotso/cli/releases/download/v0.1.1/mobs-v0.1.1-aarch64-pc-windows-msvc.zip"
         }
     },
     "bin": "mobs.exe",

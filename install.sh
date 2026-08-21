@@ -41,8 +41,6 @@ UNDERLINE="$(tput smul 2>/dev/null || printf '')"
 RED="$(tput setaf 1 2>/dev/null || printf '')"
 GREEN="$(tput setaf 2 2>/dev/null || printf '')"
 YELLOW="$(tput setaf 3 2>/dev/null || printf '')"
-BLUE="$(tput setaf 4 2>/dev/null || printf '')"
-MAGENTA="$(tput setaf 5 2>/dev/null || printf '')"
 NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
 SUPPORTED_TARGETS="x86_64-unknown-linux-gnu x86_64-unknown-linux-musl \
@@ -210,11 +208,11 @@ download() {
 
   $cmd && return 0 || rc=$?
 
-  error "Command failed (exit code $rc): ${BLUE}${cmd}${NO_COLOR}"
+  error "Command failed (exit code $rc): ${BOLD}${cmd}${NO_COLOR}"
   printf "\n" >&2
   info "This is likely due to mobs not yet supporting your configuration."
   info "If you would like to see a build for your configuration,"
-  info "please create an issue requesting a build for ${MAGENTA}${TARGET}${NO_COLOR}:"
+  info "please create an issue requesting a build for ${BOLD}${TARGET}${NO_COLOR}:"
   info "${BOLD}${UNDERLINE}https://github.com/mobdotso/cli/issues/new/${NO_COLOR}"
   return $rc
 }
@@ -336,7 +334,7 @@ detect_target() {
 
 confirm() {
   if [ -t 0 ] && [ -z "${FORCE-}" ]; then
-    printf "%s " "${MAGENTA}?${NO_COLOR} $* ${BOLD}[y/N]${NO_COLOR}"
+    printf "%s " "${BOLD}?${NO_COLOR} $* ${BOLD}[y/N]${NO_COLOR}"
     set +e
     read -r yn
     rc=$?
@@ -400,7 +398,7 @@ is_build_available() {
     error "${arch} builds for ${platform} are not yet available for mobs"
     printf "\n" >&2
     info "If you would like to see a build for your configuration,"
-    info "please create an issue requesting a build for ${MAGENTA}${target}${NO_COLOR}:"
+    info "please create an issue requesting a build for ${BOLD}${target}${NO_COLOR}:"
     info "${BOLD}${UNDERLINE}https://github.com/mobdotso/cli/issues/new/${NO_COLOR}"
     printf "\n"
     exit 1
@@ -601,11 +599,13 @@ write_env_files() {
   fi
 }
 
+# Each command goes on its own line, bolded in full, so a triple-click copies
+# a runnable command and the leading `source` cannot be read as prose.
 print_path_commands() {
   commands="$1"
 
   printf '%s\n' "$commands" | while IFS= read -r command; do
-    printf '  %s\n' "$command"
+    printf '  %s\n' "${BOLD}${command}${NO_COLOR}"
   done
 }
 
@@ -824,10 +824,10 @@ fi
 resolve_mob_version
 
 printf "  %s\n" "${UNDERLINE}Configuration${NO_COLOR}"
-info "${BOLD}Version${NO_COLOR}:  ${GREEN}${MOB_VERSION}${NO_COLOR}"
-info "${BOLD}Bin directory${NO_COLOR}:  ${GREEN}${BIN_DIR}${NO_COLOR}"
-info "${BOLD}Platform${NO_COLOR}:  ${GREEN}${PLATFORM}${NO_COLOR}"
-info "${BOLD}Arch${NO_COLOR}:  ${GREEN}${ARCH}${NO_COLOR}"
+info "${BOLD}Version${NO_COLOR}:  ${BOLD}${MOB_VERSION}${NO_COLOR}"
+info "${BOLD}Bin directory${NO_COLOR}:  ${BOLD}${BIN_DIR}${NO_COLOR}"
+info "${BOLD}Platform${NO_COLOR}:  ${BOLD}${PLATFORM}${NO_COLOR}"
+info "${BOLD}Arch${NO_COLOR}:  ${BOLD}${ARCH}${NO_COLOR}"
 printf '\n'
 
 TARGET="$(detect_target "${ARCH}" "${PLATFORM}")"
@@ -840,8 +840,8 @@ case "${PLATFORM}" in
 esac
 
 URL="${BASE_URL}/download/v${MOB_VERSION}/mobs-v${MOB_VERSION}-${TARGET}.${EXT}"
-debug "Tarball URL: ${UNDERLINE}${BLUE}${URL}${NO_COLOR}"
-confirm "Install mobs ${GREEN}latest${NO_COLOR} to ${BOLD}${GREEN}${BIN_DIR}${NO_COLOR}?"
+debug "Tarball URL: ${UNDERLINE}${BOLD}${URL}${NO_COLOR}"
+confirm "Install mobs ${BOLD}latest${NO_COLOR} to ${BOLD}${BIN_DIR}${NO_COLOR}?"
 check_bin_dir "${BIN_DIR}" || true
 
 write_env_files

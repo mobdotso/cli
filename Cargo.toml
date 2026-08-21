@@ -1,6 +1,6 @@
 [package]
 name = "mobs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Command line client for the mob.so API"
 license = "MIT"
@@ -20,6 +20,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "=1.0.98"
 clap = { version = "=4.5.40", features = ["derive"] }
+colored = "=3.1.1"
 reqwest = { version = "=0.12.15", default-features = false, features = [
     "blocking",
     "json",

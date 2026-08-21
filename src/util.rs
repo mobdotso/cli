@@ -48,8 +48,9 @@ pub fn read_json_input(path: &str) -> Result<Value> {
 
 /// Reads a value from stdin without echoing assumptions: one trimmed line.
 pub fn read_line_from_stdin(label: &str) -> Result<String> {
+    use colored::Colorize;
     use std::io::Write;
-    eprint!("{label}: ");
+    eprint!("{} {label}: ", "?".bold());
     std::io::stderr().flush().ok();
     let mut line = String::new();
     std::io::stdin()

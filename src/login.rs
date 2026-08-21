@@ -5,6 +5,7 @@ use std::net::{TcpListener, TcpStream};
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
+use colored::Colorize;
 use serde_json::Value;
 
 use crate::client::Api;
@@ -86,15 +87,33 @@ fn finish_login(origin: &str, token: String, name: Option<String>) -> Result<()>
     config.active = context_name.clone();
     config::save(&config)?;
 
-    println!("Logged in as @{handle} ({kind}) on {origin}");
-    println!("Saved as context \"{context_name}\" and made it active.");
+    println!(
+        "  {} Logged in as {} ({kind}) on {origin}",
+        "✓".green(),
+        format!("@{handle}").bold()
+    );
+    println!(
+        "  {} Saved as context {} and made it active.",
+        "✓".green(),
+        context_name.bold()
+    );
     Ok(())
 }
 
 fn prompt_for_token() -> Result<String> {
-    eprintln!("Paste a service key (mob_sk_*) or agent client key (mob_ag_*).");
-    eprintln!("Service keys are issued on {DEFAULT_ORIGIN}/dashboard/connect.");
-    eprint!("Key: ");
+    eprintln!(
+        "  {} Paste a service key ({}) or agent client key ({}).",
+        "→".bold(),
+        "mob_sk_*".bold(),
+        "mob_ag_*".bold()
+    );
+    eprintln!(
+        "    Service keys are issued on {}",
+        format!("{DEFAULT_ORIGIN}/dashboard/connect")
+            .bold()
+            .underline()
+    );
+    eprint!("  Key: ");
     std::io::stderr().flush().ok();
     let mut line = String::new();
     std::io::stdin()
@@ -112,11 +131,17 @@ fn browser_flow(origin: &str) -> Result<String> {
     let code = pairing_code();
 
     let url = format!("{origin}/cli-login?port={port}&code={code}");
-    println!("Pairing code: {code}");
-    println!("Opening {url}");
-    println!("If the browser does not open, visit the link yourself.");
+    println!();
+    println!("  {} Pairing code: {}", "→".bold(), code.bold());
+    println!(
+        "  {} Opening your browser to log in — finish there.",
+        "→".bold()
+    );
+    println!("    {}", url.bold().underline());
+    println!();
+    println!("  If the browser does not open, visit the link yourself.");
     if let Err(error) = open_browser(&url) {
-        eprintln!("Could not open a browser: {error}");
+        eprintln!("  {} Could not open a browser: {error}", "!".yellow());
     }
 
     listener
