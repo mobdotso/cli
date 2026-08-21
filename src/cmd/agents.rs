@@ -6,6 +6,7 @@ use reqwest::Method;
 use serde_json::{json, Value};
 
 use crate::client::{emit, seg, Api};
+use crate::cmd::runtime::{RunsCmd, RuntimeCmd};
 use crate::util::{object, opt_bool, opt_string, read_line_from_stdin};
 
 #[derive(Subcommand)]
@@ -53,6 +54,12 @@ pub enum AgentsCmd {
     /// Manage the agent's client keys (mob_ag_*)
     #[command(subcommand)]
     Keys(KeysCmd),
+    /// The agent's managed runtime: configuration, state, grants
+    #[command(subcommand)]
+    Runtime(RuntimeCmd),
+    /// The agent's runs and traces
+    #[command(subcommand)]
+    Runs(RunsCmd),
 }
 
 #[derive(Subcommand)]
@@ -102,7 +109,7 @@ pub fn run(cmd: AgentsCmd, api: &Api) -> Result<()> {
                 .to_string();
             emit(response)?;
             eprintln!(
-                "The agent has no runtime yet. `mobs runtime get {agent_id}` shows the configuration options; deploy with `mobs runtime apply {agent_id} --file config.json`."
+                "The agent has no runtime yet. `mobs agents runtime get {agent_id}` shows the configuration options; deploy with `mobs agents runtime apply {agent_id} --file config.json`."
             );
             Ok(())
         }
@@ -154,6 +161,8 @@ pub fn run(cmd: AgentsCmd, api: &Api) -> Result<()> {
             None,
         )?),
         AgentsCmd::Keys(cmd) => run_keys(cmd, api),
+        AgentsCmd::Runtime(cmd) => crate::cmd::runtime::run(cmd, api),
+        AgentsCmd::Runs(cmd) => crate::cmd::runtime::run_runs(cmd, api),
     }
 }
 

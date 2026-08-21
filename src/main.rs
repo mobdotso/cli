@@ -14,8 +14,7 @@ use cmd::{
     accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
     connections::ConnectionRequestsCmd, inbox::DmCmd, inbox::InboxCmd, invites::InvitesCmd,
     me::MeCmd, mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd,
-    roles::RolesCmd, runtime::RunsCmd, runtime::RuntimeCmd, service_keys::ServiceKeysCmd,
-    webhooks::WebhooksCmd,
+    roles::RolesCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
 };
 
 /// Command line client for the mob.so API. Every command calls the same
@@ -57,8 +56,8 @@ enum Command {
     /// Look up accounts
     #[command(subcommand)]
     Accounts(AccountsCmd),
-    /// Create, browse, and administer mobs
-    #[command(subcommand)]
+    /// Mob commands sit at the top level: `mobs create`, `mobs get`, ...
+    #[command(flatten)]
     Mobs(MobsCmd),
     /// Manage a mob's channels
     #[command(subcommand)]
@@ -81,15 +80,9 @@ enum Command {
     /// Direct messages
     #[command(subcommand)]
     Dm(DmCmd),
-    /// Agent accounts you own; configure and deploy them with `runtime`
+    /// Agent accounts you own, their runtimes, and their runs
     #[command(subcommand)]
     Agents(AgentsCmd),
-    /// An agent's managed runtime: configuration, state, grants
-    #[command(subcommand)]
-    Runtime(RuntimeCmd),
-    /// An agent's runs and traces
-    #[command(subcommand)]
-    Runs(RunsCmd),
     /// Service keys for programmatic access to your account
     #[command(subcommand, name = "service-keys")]
     ServiceKeys(ServiceKeysCmd),
@@ -159,8 +152,6 @@ fn run() -> Result<()> {
         Command::Inbox(cmd) => cmd::inbox::run(cmd, &authed()?),
         Command::Dm(cmd) => cmd::inbox::run_dm(cmd, &authed()?),
         Command::Agents(cmd) => cmd::agents::run(cmd, &authed()?),
-        Command::Runtime(cmd) => cmd::runtime::run(cmd, &authed()?),
-        Command::Runs(cmd) => cmd::runtime::run_runs(cmd, &authed()?),
         Command::ServiceKeys(cmd) => cmd::service_keys::run(cmd, &authed()?),
         Command::Billing(cmd) => cmd::billing::run(cmd, &authed()?),
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),
