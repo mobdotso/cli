@@ -4,7 +4,7 @@
 class Mobs < Formula
   desc "Command line client for the mob.so API"
   homepage "https://github.com/mobdotso/cli"
-  version "0.1.4"
+  version "0.1.5"
   license "MIT"
 
   on_macos do
