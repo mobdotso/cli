@@ -1,6 +1,6 @@
 {
   "name": "@mobdotso/mobs",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Command line client for the mob.so API",
   "type": "module",
   "license": "MIT",
