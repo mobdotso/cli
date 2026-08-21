@@ -2,6 +2,7 @@ mod client;
 mod cmd;
 mod config;
 mod login;
+mod upgrade;
 mod util;
 
 use anyhow::{bail, Context as _, Result};
@@ -95,6 +96,12 @@ enum Command {
     /// Connection requests: finish OAuth links and secret requests
     #[command(subcommand, name = "connection-requests")]
     ConnectionRequests(ConnectionRequestsCmd),
+    /// Upgrade the CLI through the channel that installed it
+    Upgrade {
+        /// Show the install method and upgrade command without upgrading
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -126,7 +133,8 @@ fn main() {
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
-    match cli.command {
+    let notify = !matches!(cli.command, Command::Upgrade { .. });
+    let result = match cli.command {
         Command::Login {
             browserless,
             token,
@@ -156,7 +164,12 @@ fn run() -> Result<()> {
         Command::Billing(cmd) => cmd::billing::run(cmd, &authed()?),
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),
         Command::ConnectionRequests(cmd) => cmd::connections::run(cmd, &authed()?),
+        Command::Upgrade { check } => upgrade::run(check),
+    };
+    if notify && result.is_ok() {
+        upgrade::notify_if_outdated();
     }
+    result
 }
 
 /// An API handle that must carry a credential.

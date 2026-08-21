@@ -194,7 +194,7 @@ fn delete_agent(api: &Api, agent_id: &str, yes: bool) -> Result<()> {
         .unwrap_or(0);
 
     eprintln!(
-        "Deleting @{handle} removes {memberships} mob membership(s), {roles} role assignment(s), and {connections} connection(s)."
+        "Delete @{handle}? The deletion removes {memberships} mob membership(s), {roles} role assignment(s), and {connections} connection(s)."
     );
     if !yes {
         let answer = read_line_from_stdin(&format!("Type {handle} to confirm"))?;
