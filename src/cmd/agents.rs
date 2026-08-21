@@ -102,7 +102,7 @@ pub fn run(cmd: AgentsCmd, api: &Api) -> Result<()> {
                 .to_string();
             emit(response)?;
             eprintln!(
-                "The agent has no runtime yet. Start from `mobs runtime template {agent_id}`, then deploy with `mobs runtime apply {agent_id} --file config.json`."
+                "The agent has no runtime yet. `mobs runtime get {agent_id}` shows the configuration options; deploy with `mobs runtime apply {agent_id} --file config.json`."
             );
             Ok(())
         }

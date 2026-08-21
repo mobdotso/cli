@@ -1,4 +1,4 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use clap::Subcommand;
 use serde_json::{json, Value};
 
@@ -9,17 +9,10 @@ use crate::util::{object, opt_string, read_json_input, read_line_from_stdin, str
 pub enum RuntimeCmd {
     /// Show an agent's runtime, grants, and configuration options
     Get { agent_id: String },
-    /// Print a configuration document to edit and pass to apply
-    ///
-    /// Seeds the document from the deployed runtime, or from the API's
-    /// defaults when the agent has none yet.
-    Template { agent_id: String },
-    /// Deploy a runtime configuration from a JSON document
-    ///
-    /// `mobs runtime template` prints a valid starting document.
+    /// Apply a runtime configuration from a JSON document
     Apply {
         agent_id: String,
-        /// Path to the configuration JSON, or - for stdin
+        /// Path to the RuntimeConfigRequest JSON, or - for stdin
         #[arg(long)]
         file: String,
     },
@@ -106,7 +99,6 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
         RuntimeCmd::Get { agent_id } => {
             emit(api.get(&format!("/agents/{}/runtime", seg(&agent_id)))?)
         }
-        RuntimeCmd::Template { agent_id } => template(api, &agent_id),
         RuntimeCmd::Apply { agent_id, file } => {
             let body = read_json_input(&file)?;
             emit(api.put(&format!("/agents/{}/runtime", seg(&agent_id)), Some(body))?)
@@ -126,148 +118,6 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
         )?),
         RuntimeCmd::Connections(cmd) => run_connections(cmd, api),
         RuntimeCmd::Secrets(cmd) => run_secrets(cmd, api),
-    }
-}
-
-/// Prints a configuration document the apply endpoint accepts, seeded from
-/// the deployed runtime when one exists. Without one, the document carries
-/// the API's defaults, the first model the instance offers, and a disabled
-/// trigger entry per mob so the mob ids are already in place.
-fn template(api: &Api, agent_id: &str) -> Result<()> {
-    let overview = api
-        .get(&format!("/agents/{}/runtime", seg(agent_id)))?
-        .context("The API returned an empty runtime overview")?;
-    let document = match overview.get("runtime") {
-        Some(runtime) if !runtime.is_null() => config_from_runtime(runtime),
-        _ => default_config(&overview),
-    };
-    println!("{}", serde_json::to_string_pretty(&document)?);
-    if let Some(models) = overview
-        .pointer("/options/models")
-        .and_then(Value::as_array)
-    {
-        let names: Vec<&str> = models.iter().filter_map(Value::as_str).collect();
-        eprintln!("models: {}", names.join(", "));
-    }
-    eprintln!(
-        "Edit the document, then deploy it: mobs runtime apply {agent_id} --file config.json"
-    );
-    Ok(())
-}
-
-/// Projects a runtime response back into the request shape: server-assigned
-/// ids and display names go away, and direct message senders collapse to
-/// their handles.
-fn config_from_runtime(runtime: &Value) -> Value {
-    let arr = |key: &str| {
-        runtime
-            .get(key)
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default()
-    };
-
-    let mob_triggers: Vec<Value> = arr("mob_triggers")
-        .iter()
-        .map(|trigger| {
-            let mut trigger = strip(trigger, &["mob_handle", "mob_name"]);
-            let rules: Vec<Value> = trigger
-                .get("rules")
-                .and_then(Value::as_array)
-                .map(|rules| rules.iter().map(|rule| strip(rule, &["id"])).collect())
-                .unwrap_or_default();
-            trigger["rules"] = Value::Array(rules);
-            trigger
-        })
-        .collect();
-
-    let workspace_grants: Vec<Value> = arr("workspace_grants")
-        .iter()
-        .filter_map(|grant| grant.get("path").cloned())
-        .map(|path| json!({ "path": path }))
-        .collect();
-
-    let sender_handles: Vec<Value> = runtime
-        .pointer("/direct_messages/senders")
-        .and_then(Value::as_array)
-        .map(|senders| {
-            senders
-                .iter()
-                .filter_map(|sender| sender.get("handle").cloned())
-                .collect()
-        })
-        .unwrap_or_default();
-
-    json!({
-        "directive": runtime.get("directive").cloned().unwrap_or(Value::String(String::new())),
-        "model": runtime.get("model").cloned().unwrap_or(json!({ "name": "", "effort": "medium" })),
-        "resources": runtime.get("resources").cloned()
-            .unwrap_or(json!({ "max_run_duration_minutes": 15, "max_token_throughput": 60000 })),
-        "run_limits": arr("run_limits"),
-        "mob_triggers": mob_triggers,
-        "workspace_grants": workspace_grants,
-        "persistent_context": runtime.get("persistent_context").cloned()
-            .unwrap_or(json!({ "enabled": false, "retention_days": 30 })),
-        "browser": runtime.get("browser").cloned().unwrap_or(json!({ "enabled": false })),
-        "direct_messages": {
-            "sender_handles": sender_handles,
-            "send_to_owner": runtime
-                .pointer("/direct_messages/send_to_owner")
-                .cloned()
-                .unwrap_or(Value::Bool(false)),
-        },
-    })
-}
-
-fn default_config(overview: &Value) -> Value {
-    let model = overview
-        .pointer("/options/models")
-        .and_then(Value::as_array)
-        .and_then(|models| models.first())
-        .cloned()
-        .unwrap_or(Value::String(String::new()));
-    let mob_triggers: Vec<Value> = overview
-        .get("mobs")
-        .and_then(Value::as_array)
-        .map(|mobs| {
-            mobs.iter()
-                .filter_map(|mob| mob.get("mob_id").cloned())
-                .map(|mob_id| {
-                    json!({
-                        "mob_id": mob_id,
-                        "enabled": false,
-                        "participation": "mention_only",
-                        "idempotency_enabled": true,
-                        "max_consecutive_turns": 3,
-                        "rules": [],
-                    })
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    json!({
-        "directive": "",
-        "model": { "name": model, "effort": "medium" },
-        "resources": { "max_run_duration_minutes": 15, "max_token_throughput": 60000 },
-        "run_limits": [],
-        "mob_triggers": mob_triggers,
-        "workspace_grants": [],
-        "persistent_context": { "enabled": false, "retention_days": 30 },
-        "browser": { "enabled": false },
-        "direct_messages": { "sender_handles": [], "send_to_owner": false },
-    })
-}
-
-/// Clones a JSON object without the named keys.
-fn strip(value: &Value, keys: &[&str]) -> Value {
-    match value {
-        Value::Object(map) => Value::Object(
-            map.iter()
-                .filter(|(key, _)| !keys.contains(&key.as_str()))
-                .map(|(key, value)| (key.clone(), value.clone()))
-                .collect(),
-        ),
-        other => other.clone(),
     }
 }
 

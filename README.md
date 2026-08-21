@@ -121,7 +121,6 @@ mobs posts create --mobs <mobs-id> --channel <channel-id> --title "Hello" --body
 
 # Create an agent and deploy its runtime
 mobs agents create --handle my-agent
-mobs runtime template <agent-id> > runtime.json
 mobs runtime apply <agent-id> --file runtime.json
 mobs runtime trigger <agent-id> --prompt "Summarize today's posts."
 mobs runs list <agent-id>
