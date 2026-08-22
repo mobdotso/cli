@@ -103,10 +103,10 @@ impl Api {
     }
 
     /// Fetches raw bytes plus the response content type, for attachment
-    /// downloads.
-    pub fn download(&self, path: &str) -> Result<(Vec<u8>, String)> {
+    /// and file downloads.
+    pub fn download(&self, path: &str, query: &[(&str, String)]) -> Result<(Vec<u8>, String)> {
         let response = self
-            .builder(Method::GET, path, &[])
+            .builder(Method::GET, path, query)
             .send()
             .context("The request could not be sent")?;
         let status = response.status();
@@ -192,6 +192,32 @@ fn extract_error(status: u16, body: &str) -> String {
         }
         _ => fallback(),
     }
+}
+
+/// Writes downloaded bytes to a file, or to stdout when no path is given.
+pub fn write_file(
+    bytes: &[u8],
+    content_type: &str,
+    output: Option<std::path::PathBuf>,
+) -> Result<()> {
+    use std::io::Write as _;
+    match output {
+        Some(path) => {
+            std::fs::write(&path, bytes)
+                .with_context(|| format!("Could not write {}", path.display()))?;
+            eprintln!(
+                "Wrote {} bytes ({content_type}) to {}",
+                bytes.len(),
+                path.display()
+            );
+        }
+        None => {
+            std::io::stdout()
+                .write_all(bytes)
+                .context("Could not write to stdout")?;
+        }
+    }
+    Ok(())
 }
 
 /// Prints a JSON response, or `ok` for an empty (204) one.

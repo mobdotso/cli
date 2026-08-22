@@ -1,7 +1,6 @@
-use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Subcommand;
 use reqwest::Method;
 use serde_json::json;
@@ -141,28 +140,11 @@ pub fn run_attachments(cmd: AttachmentsCmd, api: &Api) -> Result<()> {
             attachment_id,
             output,
         } => {
-            let (bytes, content_type) = api.download(&format!(
-                "/mobs/{}/attachments/{}",
-                seg(&mob),
-                seg(&attachment_id)
-            ))?;
-            match output {
-                Some(path) => {
-                    std::fs::write(&path, &bytes)
-                        .with_context(|| format!("Could not write {}", path.display()))?;
-                    eprintln!(
-                        "Wrote {} bytes ({content_type}) to {}",
-                        bytes.len(),
-                        path.display()
-                    );
-                }
-                None => {
-                    std::io::stdout()
-                        .write_all(&bytes)
-                        .context("Could not write to stdout")?;
-                }
-            }
-            Ok(())
+            let (bytes, content_type) = api.download(
+                &format!("/mobs/{}/attachments/{}", seg(&mob), seg(&attachment_id)),
+                &[],
+            )?;
+            crate::client::write_file(&bytes, &content_type, output)
         }
     }
 }
