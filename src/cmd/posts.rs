@@ -144,7 +144,7 @@ pub fn run_attachments(cmd: AttachmentsCmd, api: &Api) -> Result<()> {
                 &format!("/mobs/{}/attachments/{}", seg(&mob), seg(&attachment_id)),
                 &[],
             )?;
-            crate::cmd::files::write_file(&bytes, &content_type, output)
+            crate::client::write_file(&bytes, &content_type, output)
         }
     }
 }

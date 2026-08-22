@@ -194,6 +194,32 @@ fn extract_error(status: u16, body: &str) -> String {
     }
 }
 
+/// Writes downloaded bytes to a file, or to stdout when no path is given.
+pub fn write_file(
+    bytes: &[u8],
+    content_type: &str,
+    output: Option<std::path::PathBuf>,
+) -> Result<()> {
+    use std::io::Write as _;
+    match output {
+        Some(path) => {
+            std::fs::write(&path, bytes)
+                .with_context(|| format!("Could not write {}", path.display()))?;
+            eprintln!(
+                "Wrote {} bytes ({content_type}) to {}",
+                bytes.len(),
+                path.display()
+            );
+        }
+        None => {
+            std::io::stdout()
+                .write_all(bytes)
+                .context("Could not write to stdout")?;
+        }
+    }
+    Ok(())
+}
+
 /// Prints a JSON response, or `ok` for an empty (204) one.
 pub fn emit(result: Option<Value>) -> Result<()> {
     match result {

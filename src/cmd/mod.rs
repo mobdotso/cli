@@ -2,7 +2,6 @@ pub mod accounts;
 pub mod agents;
 pub mod billing;
 pub mod connections;
-pub mod files;
 pub mod inbox;
 pub mod invites;
 pub mod me;

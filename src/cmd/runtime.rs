@@ -33,13 +33,17 @@ pub enum RuntimeCmd {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    /// List the scratch files in the runtime workspace
+    /// List the workspace's scratch files and its granted folders
     Files { agent_id: String },
-    /// Read one scratch file from the runtime workspace
+    /// Read one file from the workspace or a granted folder
     ReadFile {
         agent_id: String,
-        /// Path inside the workspace, e.g. notes/plan.md
+        /// Path inside the selected root, e.g. notes/plan.md
         path: String,
+        /// Read from this granted folder (a grant id from `runtime files`)
+        /// instead of the scratch workspace
+        #[arg(long)]
+        grant: Option<String>,
         /// Write to this file instead of stdout
         #[arg(long, short = 'o')]
         output: Option<std::path::PathBuf>,
@@ -139,13 +143,22 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
         RuntimeCmd::ReadFile {
             agent_id,
             path,
+            grant,
             output,
         } => {
+            let mut query = vec![("path", path)];
+            match grant {
+                Some(grant_id) => {
+                    query.push(("root", "grant".to_string()));
+                    query.push(("grant_id", grant_id));
+                }
+                None => query.push(("root", "workspace".to_string())),
+            }
             let (bytes, content_type) = api.download(
                 &format!("/agents/{}/runtime/files/content", seg(&agent_id)),
-                &[("path", path)],
+                &query,
             )?;
-            crate::cmd::files::write_file(&bytes, &content_type, output)
+            crate::client::write_file(&bytes, &content_type, output)
         }
         RuntimeCmd::Connections(cmd) => run_connections(cmd, api),
         RuntimeCmd::Secrets(cmd) => run_secrets(cmd, api),
