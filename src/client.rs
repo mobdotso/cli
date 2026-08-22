@@ -103,10 +103,10 @@ impl Api {
     }
 
     /// Fetches raw bytes plus the response content type, for attachment
-    /// downloads.
-    pub fn download(&self, path: &str) -> Result<(Vec<u8>, String)> {
+    /// and file downloads.
+    pub fn download(&self, path: &str, query: &[(&str, String)]) -> Result<(Vec<u8>, String)> {
         let response = self
-            .builder(Method::GET, path, &[])
+            .builder(Method::GET, path, query)
             .send()
             .context("The request could not be sent")?;
         let status = response.status();

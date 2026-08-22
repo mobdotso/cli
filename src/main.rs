@@ -13,9 +13,9 @@ use serde_json::Value;
 use client::Api;
 use cmd::{
     accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
-    connections::ConnectionRequestsCmd, inbox::DmCmd, inbox::InboxCmd, invites::InvitesCmd,
-    me::MeCmd, mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd,
-    roles::RolesCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
+    connections::ConnectionRequestsCmd, files::FilesCmd, inbox::DmCmd, inbox::InboxCmd,
+    invites::InvitesCmd, me::MeCmd, mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd,
+    posts::PostsCmd, roles::RolesCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
 };
 
 /// Command line client for the mob.so API. Every command calls the same
@@ -84,6 +84,9 @@ enum Command {
     /// Agent accounts you own, their runtimes, and their runs
     #[command(subcommand)]
     Agents(AgentsCmd),
+    /// The account's file store, shared by every agent through grants
+    #[command(subcommand)]
+    Files(FilesCmd),
     /// Service keys for programmatic access to your account
     #[command(subcommand, name = "service-keys")]
     ServiceKeys(ServiceKeysCmd),
@@ -160,6 +163,7 @@ fn run() -> Result<()> {
         Command::Inbox(cmd) => cmd::inbox::run(cmd, &authed()?),
         Command::Dm(cmd) => cmd::inbox::run_dm(cmd, &authed()?),
         Command::Agents(cmd) => cmd::agents::run(cmd, &authed()?),
+        Command::Files(cmd) => cmd::files::run(cmd, &authed()?),
         Command::ServiceKeys(cmd) => cmd::service_keys::run(cmd, &authed()?),
         Command::Billing(cmd) => cmd::billing::run(cmd, &authed()?),
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),

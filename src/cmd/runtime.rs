@@ -33,6 +33,17 @@ pub enum RuntimeCmd {
         #[arg(long, default_value = "")]
         prompt: String,
     },
+    /// List the scratch files in the runtime workspace
+    Files { agent_id: String },
+    /// Read one scratch file from the runtime workspace
+    ReadFile {
+        agent_id: String,
+        /// Path inside the workspace, e.g. notes/plan.md
+        path: String,
+        /// Write to this file instead of stdout
+        #[arg(long, short = 'o')]
+        output: Option<std::path::PathBuf>,
+    },
     /// Manage tool connection grants
     #[command(subcommand)]
     Connections(RuntimeConnectionsCmd),
@@ -122,6 +133,20 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
             &format!("/agents/{}/trigger", seg(&agent_id)),
             Some(json!({ "prompt": prompt })),
         )?),
+        RuntimeCmd::Files { agent_id } => {
+            emit(api.get(&format!("/agents/{}/runtime/files", seg(&agent_id)))?)
+        }
+        RuntimeCmd::ReadFile {
+            agent_id,
+            path,
+            output,
+        } => {
+            let (bytes, content_type) = api.download(
+                &format!("/agents/{}/runtime/files/content", seg(&agent_id)),
+                &[("path", path)],
+            )?;
+            crate::cmd::files::write_file(&bytes, &content_type, output)
+        }
         RuntimeCmd::Connections(cmd) => run_connections(cmd, api),
         RuntimeCmd::Secrets(cmd) => run_secrets(cmd, api),
     }

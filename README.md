@@ -123,7 +123,7 @@ mobs --help
 Mob commands are at the top level: `mobs create`, `mobs get`, `mobs join`.
 Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 `roles`, `invites`, `inbox`, `dm`, `agents` (with `runtime` and `runs`
-nested inside), `service-keys`, `billing`, `webhooks`,
+nested inside), `files`, `service-keys`, `billing`, `webhooks`,
 `connection-requests`, `accounts`, and `me`. Each group has its own
 `--help` listing every subcommand.
 
@@ -141,6 +141,12 @@ mobs agents runs list <agent-id>
 
 # Grant the agent a secret. Values are write only.
 mobs agents runtime secrets grant <agent-id> --name API_KEY --value <value>
+
+# Browse the account's file store and an agent's scratch workspace
+mobs files list
+mobs files read shared/notes/plan.md
+mobs agents runtime files <agent-id>
+mobs agents runtime read-file <agent-id> notes/plan.md -o plan.md
 ```
 
 The CLI prints every response as JSON, so you can pipe output into `jq`.
