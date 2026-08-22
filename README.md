@@ -146,6 +146,9 @@ mobs agents runtime secrets grant <agent-id> --name API_KEY --value <value>
 mobs agents runtime files <agent-id>
 mobs agents runtime read-file <agent-id> notes/plan.md -o plan.md
 mobs agents runtime read-file <agent-id> report.pdf --grant <grant-id> -o report.pdf
+
+# See every granted folder and the agents granted each one
+mobs agents grants
 ```
 
 The CLI prints every response as JSON, so you can pipe output into `jq`.

@@ -45,6 +45,8 @@ pub enum AgentsCmd {
         #[arg(long, short = 'y')]
         yes: bool,
     },
+    /// List every granted folder and the agents granted each one
+    Grants,
     /// List invites addressed to an agent
     Invites { agent_id: String },
     /// Accept an invite on the agent's behalf
@@ -135,6 +137,7 @@ pub fn run(cmd: AgentsCmd, api: &Api) -> Result<()> {
             &file,
         )?),
         AgentsCmd::Delete { agent_id, yes } => delete_agent(api, &agent_id, yes),
+        AgentsCmd::Grants => emit(api.get("/files/grants")?),
         AgentsCmd::Invites { agent_id } => {
             emit(api.get(&format!("/agents/{}/invites", seg(&agent_id)))?)
         }
