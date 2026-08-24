@@ -25,6 +25,12 @@ pub enum MeCmd {
         /// The provider's user id for the identity
         provider_user_id: String,
     },
+    /// List the clients authorized on this account through browser
+    /// authorization
+    Clients,
+    /// Revoke an authorized client's tokens; it signs in again through
+    /// browser authorization
+    RevokeClient { connection_id: String },
 }
 
 pub fn run(cmd: MeCmd, api: &Api) -> Result<()> {
@@ -44,5 +50,9 @@ pub fn run(cmd: MeCmd, api: &Api) -> Result<()> {
             seg(&provider),
             seg(&provider_user_id)
         ))?),
+        MeCmd::Clients => emit(api.get("/oauth/connections")?),
+        MeCmd::RevokeClient { connection_id } => {
+            emit(api.delete(&format!("/oauth/connections/{}", seg(&connection_id)))?)
+        }
     }
 }

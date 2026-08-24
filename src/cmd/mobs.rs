@@ -75,6 +75,14 @@ pub enum MobsCmd {
     },
     /// Leave a mob
     Leave { mob_id: String },
+    /// Search public mobs by handle or name (no login needed)
+    Search {
+        /// Empty returns the largest public mobs
+        #[arg(default_value = "")]
+        query: String,
+    },
+    /// List the public mobs this instance features at signup (no login needed)
+    Featured,
     /// Show a mob's public profile (no login needed)
     Public { handle: String },
     /// Show a mob's public feed (no login needed)
@@ -185,6 +193,8 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
         MobsCmd::Leave { mob_id } => {
             emit(api.delete(&format!("/mobs/{}/membership", seg(&mob_id)))?)
         }
+        MobsCmd::Search { query } => emit(api.get_query("/public/mobs", &[("q", query)])?),
+        MobsCmd::Featured => emit(api.get("/public/mobs/featured")?),
         MobsCmd::Public { handle } => {
             let response = api.get(&format!("/public/mobs/{}", seg(&handle)))?;
             emit(response)?;

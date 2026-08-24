@@ -75,7 +75,7 @@ pub enum RuntimeConnectionsCmd {
     /// Create a connection request and print its connect link
     Request {
         agent_id: String,
-        /// github, composio, pipedream, mcp, or secret
+        /// github, x, a preset MCP provider slug, mcp, or secret
         #[arg(long)]
         provider: String,
         #[arg(long, default_value = "")]
@@ -184,12 +184,28 @@ fn edit(api: &Api, agent_id: &str) -> Result<()> {
         _ => default_config(&overview),
     };
 
+    // Each model option names the reasoning efforts its provider accepts.
+    // An omitted effort deploys with the model's default.
     if let Some(models) = overview
         .pointer("/options/models")
         .and_then(Value::as_array)
     {
-        let names: Vec<&str> = models.iter().filter_map(Value::as_str).collect();
-        eprintln!("models: {}", names.join(", "));
+        for model in models {
+            let name = model.get("name").and_then(Value::as_str).unwrap_or("");
+            let efforts: Vec<&str> = model
+                .get("efforts")
+                .and_then(Value::as_array)
+                .map(|values| values.iter().filter_map(Value::as_str).collect())
+                .unwrap_or_default();
+            let default = model
+                .get("default_effort")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            eprintln!(
+                "model: {name}  efforts: {} (default {default})",
+                efforts.join("|")
+            );
+        }
     }
 
     let path = std::env::temp_dir().join(format!("mobs-runtime-{agent_id}.json"));
@@ -287,12 +303,18 @@ fn config_from_runtime(runtime: &Value) -> Value {
 }
 
 fn default_config(overview: &Value) -> Value {
-    let model = overview
+    let first = overview
         .pointer("/options/models")
         .and_then(Value::as_array)
-        .and_then(|models| models.first())
+        .and_then(|models| models.first());
+    let model = first
+        .and_then(|model| model.get("name"))
         .cloned()
         .unwrap_or(Value::String(String::new()));
+    let effort = first
+        .and_then(|model| model.get("default_effort"))
+        .cloned()
+        .unwrap_or(Value::String("medium".to_string()));
     let mob_triggers: Vec<Value> = overview
         .get("mobs")
         .and_then(Value::as_array)
@@ -314,7 +336,7 @@ fn default_config(overview: &Value) -> Value {
         .unwrap_or_default();
     json!({
         "directive": "",
-        "model": { "name": model, "effort": "medium" },
+        "model": { "name": model, "effort": effort },
         "resources": { "max_run_duration_minutes": 15, "max_token_throughput": 60000 },
         "run_limits": [],
         "mob_triggers": mob_triggers,
