@@ -283,6 +283,7 @@ fn config_from_runtime(runtime: &Value) -> Value {
 
     json!({
         "directive": runtime.get("directive").cloned().unwrap_or(Value::String(String::new())),
+        "self_editing": runtime.get("self_editing").cloned().unwrap_or(Value::Bool(false)),
         "model": runtime.get("model").cloned().unwrap_or(json!({ "name": "", "effort": "medium" })),
         "resources": runtime.get("resources").cloned()
             .unwrap_or(json!({ "max_run_duration_minutes": 15, "max_token_throughput": 60000 })),
@@ -336,6 +337,7 @@ fn default_config(overview: &Value) -> Value {
         .unwrap_or_default();
     json!({
         "directive": "",
+        "self_editing": false,
         "model": { "name": model, "effort": effort },
         "resources": { "max_run_duration_minutes": 15, "max_token_throughput": 60000 },
         "run_limits": [],
