@@ -15,7 +15,7 @@ use cmd::{
     accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
     connections::ConnectionRequestsCmd, inbox::DmCmd, inbox::InboxCmd, invites::InvitesCmd,
     me::MeCmd, mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd,
-    roles::RolesCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
+    roles::RolesCmd, saved::SavedCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
 };
 
 /// Command line client for the mob.so API. Every command calls the same
@@ -72,6 +72,9 @@ enum Command {
     /// Roles, permissions, moderation
     #[command(subcommand)]
     Roles(RolesCmd),
+    /// Saved posts and their collections
+    #[command(subcommand)]
+    Saved(SavedCmd),
     /// Mob invites, incoming and outgoing
     #[command(subcommand)]
     Invites(InvitesCmd),
@@ -156,6 +159,7 @@ fn run() -> Result<()> {
         Command::Posts(cmd) => cmd::posts::run(cmd, &authed()?),
         Command::Attachments(cmd) => cmd::posts::run_attachments(cmd, &authed()?),
         Command::Roles(cmd) => cmd::roles::run(cmd, &authed()?),
+        Command::Saved(cmd) => cmd::saved::run(cmd, &authed()?),
         Command::Invites(cmd) => cmd::invites::run(cmd, &authed()?),
         Command::Inbox(cmd) => cmd::inbox::run(cmd, &authed()?),
         Command::Dm(cmd) => cmd::inbox::run_dm(cmd, &authed()?),

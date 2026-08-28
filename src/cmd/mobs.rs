@@ -75,6 +75,44 @@ pub enum MobsCmd {
     },
     /// Leave a mob
     Leave { mob_id: String },
+    /// Search a mob's posts and comments over its whole history
+    SearchPosts {
+        mob_id: String,
+        query: String,
+        #[arg(long, default_value_t = 50)]
+        limit: u32,
+        /// Search only these channels, by name or id (repeatable)
+        #[arg(long = "channel")]
+        channels: Vec<String>,
+    },
+    /// Which accounts post into which channels, with counts and recency
+    Activity {
+        mob_id: String,
+        /// Narrow to one channel, by name or id
+        #[arg(long, default_value = "")]
+        channel: String,
+        /// How far back the counts run: 24h, 7d, 30d, or all
+        #[arg(long, default_value = "7d")]
+        window: String,
+        /// Comma separated subset of member, agent, and webhook
+        #[arg(long, default_value = "")]
+        kinds: String,
+        /// Drop links below this write count
+        #[arg(long, default_value_t = 1)]
+        min_writes: u32,
+        /// Cap how many accounts come back, busiest first
+        #[arg(long, default_value_t = 24)]
+        limit: u32,
+        /// Include channels with nothing in the window
+        #[arg(long)]
+        quiet: bool,
+    },
+    /// Show a public mob's star count and whether this account starred it
+    Stars { handle: String },
+    /// Star a public mob; starring twice leaves the total where it was
+    Star { handle: String },
+    /// Take back this account's star on a mob
+    Unstar { handle: String },
     /// Search public mobs by handle or name (no login needed)
     Search {
         /// Empty returns the largest public mobs
@@ -192,6 +230,50 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
         )?),
         MobsCmd::Leave { mob_id } => {
             emit(api.delete(&format!("/mobs/{}/membership", seg(&mob_id)))?)
+        }
+        MobsCmd::SearchPosts {
+            mob_id,
+            query,
+            limit,
+            channels,
+        } => {
+            let mut params = vec![("q", query), ("limit", limit.to_string())];
+            for channel in channels {
+                params.push(("channel", channel));
+            }
+            emit(api.get_query(&format!("/mobs/{}/search", seg(&mob_id)), &params)?)
+        }
+        MobsCmd::Activity {
+            mob_id,
+            channel,
+            window,
+            kinds,
+            min_writes,
+            limit,
+            quiet,
+        } => {
+            let mut params = vec![
+                ("window", window),
+                ("min_writes", min_writes.to_string()),
+                ("limit", limit.to_string()),
+                ("quiet", quiet.to_string()),
+            ];
+            if !channel.is_empty() {
+                params.push(("channel_id", channel));
+            }
+            if !kinds.is_empty() {
+                params.push(("kinds", kinds));
+            }
+            emit(api.get_query(&format!("/mobs/{}/activity", seg(&mob_id)), &params)?)
+        }
+        MobsCmd::Stars { handle } => {
+            emit(api.get(&format!("/public/mobs/{}/stars", seg(&handle)))?)
+        }
+        MobsCmd::Star { handle } => {
+            emit(api.post(&format!("/public/mobs/{}/stars", seg(&handle)), None)?)
+        }
+        MobsCmd::Unstar { handle } => {
+            emit(api.delete(&format!("/public/mobs/{}/stars", seg(&handle)))?)
         }
         MobsCmd::Search { query } => emit(api.get_query("/public/mobs", &[("q", query)])?),
         MobsCmd::Featured => emit(api.get("/public/mobs/featured")?),

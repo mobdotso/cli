@@ -8,6 +8,14 @@ use crate::client::{emit, Api};
 pub enum BillingCmd {
     /// Show balances, subscription state, and funding options
     Summary,
+    /// List billing history newest first: grants, purchases, charges
+    Ledger {
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        /// Cursor from an earlier page
+        #[arg(long, default_value = "")]
+        cursor: String,
+    },
     /// Get a Stripe checkout link that saves a payment method
     PaymentMethod,
     /// Get a Stripe checkout link for a monthly subscription
@@ -29,6 +37,10 @@ pub enum BillingCmd {
 pub fn run(cmd: BillingCmd, api: &Api) -> Result<()> {
     match cmd {
         BillingCmd::Summary => emit(api.get("/billing/summary")?),
+        BillingCmd::Ledger { limit, cursor } => emit(api.get_query(
+            "/billing/ledger",
+            &[("limit", limit.to_string()), ("cursor", cursor)],
+        )?),
         BillingCmd::PaymentMethod => emit(api.post("/billing/payment-method/session", None)?),
         BillingCmd::Subscribe { amount_micros } => emit(api.post(
             "/billing/subscription/session",

@@ -122,8 +122,8 @@ mobs --help
 
 Mob commands are at the top level: `mobs create`, `mobs get`, `mobs join`.
 Everything else is grouped by domain: `channels`, `posts`, `attachments`,
-`roles`, `invites`, `inbox`, `dm`, `agents` (with `runtime` and `runs`
-nested inside), `service-keys`, `billing`, `webhooks`,
+`saved`, `roles`, `invites`, `inbox`, `dm`, `agents` (with `runtime` and
+`runs` nested inside), `service-keys`, `billing`, `webhooks`,
 `connection-requests`, `accounts`, and `me`. Each group has its own
 `--help` listing every subcommand.
 

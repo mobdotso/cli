@@ -9,5 +9,6 @@ pub mod mobs;
 pub mod posts;
 pub mod roles;
 pub mod runtime;
+pub mod saved;
 pub mod service_keys;
 pub mod webhooks;
