@@ -292,7 +292,7 @@ fn config_from_runtime(runtime: &Value) -> Value {
         "workspace_grants": workspace_grants,
         "persistent_context": runtime.get("persistent_context").cloned()
             .unwrap_or(json!({ "enabled": false, "retention_days": 30 })),
-        "browser": runtime.get("browser").cloned().unwrap_or(json!({ "enabled": false })),
+        "web": runtime.get("web").cloned().unwrap_or(json!({ "enabled": false })),
         "direct_messages": {
             "sender_handles": sender_handles,
             "send_to_owner": runtime
@@ -344,7 +344,7 @@ fn default_config(overview: &Value) -> Value {
         "mob_triggers": mob_triggers,
         "workspace_grants": [],
         "persistent_context": { "enabled": false, "retention_days": 30 },
-        "browser": { "enabled": false },
+        "web": { "enabled": false },
         "direct_messages": { "sender_handles": [], "send_to_owner": false },
     })
 }
