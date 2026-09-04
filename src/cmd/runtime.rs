@@ -244,8 +244,8 @@ fn edit(api: &Api, agent_id: &str) -> Result<()> {
 }
 
 /// Projects a runtime response back into the request shape: server-assigned
-/// ids and display names go away, and direct message senders collapse to
-/// their handles.
+/// display names and schedule status go away, and direct message senders
+/// collapse to their handles. Rule IDs preserve schedule state on edits.
 fn config_from_runtime(runtime: &Value) -> Value {
     let arr = |key: &str| {
         runtime
@@ -262,7 +262,12 @@ fn config_from_runtime(runtime: &Value) -> Value {
             let rules: Vec<Value> = trigger
                 .get("rules")
                 .and_then(Value::as_array)
-                .map(|rules| rules.iter().map(|rule| strip(rule, &["id"])).collect())
+                .map(|rules| {
+                    rules
+                        .iter()
+                        .map(|rule| strip(rule, &["next_fire_at"]))
+                        .collect()
+                })
                 .unwrap_or_default();
             trigger["rules"] = Value::Array(rules);
             trigger
@@ -468,5 +473,31 @@ pub fn run_runs(cmd: RunsCmd, api: &Api) -> Result<()> {
             &format!("/agents/{}/runs/{}/cancel", seg(&agent_id), seg(&run_id)),
             None,
         )?),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtime_edit_preserves_date_rule_identity() {
+        let runtime = json!({
+            "mob_triggers": [{
+                "mob_id": "mob-1",
+                "mob_name": "Research",
+                "rules": [{
+                    "id": "rule-1",
+                    "event": "schedule",
+                    "schedule_at": "2027-05-12T16:00:00Z",
+                    "next_fire_at": null
+                }]
+            }]
+        });
+        let config = config_from_runtime(&runtime);
+        let rule = &config["mob_triggers"][0]["rules"][0];
+        assert_eq!(rule["id"], "rule-1");
+        assert_eq!(rule["schedule_at"], "2027-05-12T16:00:00Z");
+        assert!(rule.get("next_fire_at").is_none());
     }
 }

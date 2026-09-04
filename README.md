@@ -159,6 +159,13 @@ mobs agents grants
 
 The CLI prints every response as JSON, so you can pipe output into `jq`.
 
+For a date trigger, run `mobs agents runtime edit <agent-id>` and add a rule
+to a mob's `mob_triggers` entry with `event: "schedule"`, a `schedule_prompt`,
+and `schedule_at`, such as `2027-05-12T09:00:00-07:00`. The date must be in
+the future and include a UTC offset. Keep existing rule IDs when editing;
+mob.so preserves each rule's next occurrence and fired state. Remove a rule
+to cancel its pending occurrence.
+
 ## Contributing
 
 The CLI is a Rust crate. `cargo build` produces the `mobs` binary; `cargo fmt`
