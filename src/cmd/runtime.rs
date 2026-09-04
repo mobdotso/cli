@@ -99,6 +99,11 @@ pub enum SecretsCmd {
         /// Value for a new secret; omit to type it on stdin
         #[arg(long)]
         value: Option<String>,
+        /// Domain the agent may send this secret to (repeatable). Omit
+        /// to allow any public HTTPS destination. Granting again
+        /// replaces the grant's domain list
+        #[arg(long = "domain")]
+        allowed_domains: Vec<String>,
     },
     /// Revoke a secret grant
     Revoke { agent_id: String, secret_id: String },
@@ -417,6 +422,7 @@ fn run_secrets(cmd: SecretsCmd, api: &Api) -> Result<()> {
             secret_id,
             name,
             value,
+            allowed_domains,
         } => {
             if secret_id.is_none() && name.is_none() {
                 bail!("Pass --secret-id for a stored secret, or --name (with --value or stdin) for a new one");
@@ -426,12 +432,18 @@ fn run_secrets(cmd: SecretsCmd, api: &Api) -> Result<()> {
                 (None, Some(value)) => Some(value),
                 (None, None) => Some(read_line_from_stdin("Secret value")?),
             };
+            let domains = if allowed_domains.is_empty() {
+                None
+            } else {
+                Some(strings(&allowed_domains))
+            };
             emit(api.post(
                 &format!("/agents/{}/runtime/secrets", seg(&agent_id)),
                 Some(object(vec![
                     ("secret_id", opt_string(&secret_id)),
                     ("name", opt_string(&name)),
                     ("value", opt_string(&value)),
+                    ("allowed_domains", domains),
                 ])),
             )?)
         }
