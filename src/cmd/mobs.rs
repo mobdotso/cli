@@ -336,6 +336,9 @@ pub enum ChannelsCmd {
         description: Option<String>,
         #[arg(long)]
         public: Option<bool>,
+        /// Zero-based channel position; zero moves it first
+        #[arg(long, value_parser = clap::value_parser!(u32).range(0..=2147483647))]
+        position: Option<u32>,
     },
     /// Delete a channel
     Delete {
@@ -367,12 +370,14 @@ pub fn run_channels(cmd: ChannelsCmd, api: &Api) -> Result<()> {
             name,
             description,
             public,
+            position,
         } => emit(api.patch(
             &format!("/mobs/{}/channels/{}", seg(&mob), seg(&channel_id)),
             Some(object(vec![
                 ("name", opt_string(&name)),
                 ("description", opt_string(&description)),
                 ("public", opt_bool(&public)),
+                ("position", position.map(|value| json!(value))),
             ])),
         )?),
         ChannelsCmd::Delete { mob, channel_id } => emit(api.delete(&format!(
