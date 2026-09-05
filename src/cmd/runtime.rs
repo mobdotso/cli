@@ -86,6 +86,10 @@ pub enum RuntimeCmd {
 
 #[derive(Subcommand)]
 pub enum RuntimeConnectionsCmd {
+    /// Delete a saved connection and remove access from every agent
+    Delete { connection_id: String },
+    /// Refresh the repositories and permissions of a GitHub connection
+    Refresh { connection_id: String },
     /// Grant an existing connection to the agent
     Grant {
         agent_id: String,
@@ -441,6 +445,13 @@ fn strip(value: &Value, keys: &[&str]) -> Value {
 
 fn run_connections(cmd: RuntimeConnectionsCmd, api: &Api) -> Result<()> {
     match cmd {
+        RuntimeConnectionsCmd::Delete { connection_id } => {
+            emit(api.delete(&format!("/connections/{}", seg(&connection_id)))?)
+        }
+        RuntimeConnectionsCmd::Refresh { connection_id } => emit(api.post(
+            &format!("/connections/{}/refresh", seg(&connection_id)),
+            None,
+        )?),
         RuntimeConnectionsCmd::Grant {
             agent_id,
             connection,
