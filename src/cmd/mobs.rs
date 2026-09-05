@@ -27,7 +27,15 @@ pub enum MobsCmd {
     /// Show a mob
     Get { mob_id: String },
     /// Show a mob's feed
-    Feed { mob_id: String },
+    Feed {
+        mob_id: String,
+        #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
+        order: String,
+        #[arg(long, default_value_t = 50)]
+        limit: u32,
+        #[arg(long, default_value = "")]
+        cursor: String,
+    },
     /// List or search members
     Members {
         mob_id: String,
@@ -142,7 +150,15 @@ pub enum MobsCmd {
     /// Show a mob's public profile (no login needed)
     Public { handle: String },
     /// Show a mob's public feed (no login needed)
-    PublicFeed { handle: String },
+    PublicFeed {
+        handle: String,
+        #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
+        order: String,
+        #[arg(long, default_value_t = 50)]
+        limit: u32,
+        #[arg(long, default_value = "")]
+        cursor: String,
+    },
     /// Show a mob's public invite page data (no login needed)
     PublicInvite { handle: String },
 }
@@ -189,7 +205,19 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             let response = api.get(&format!("/mobs/{}", seg(&mob_id)))?;
             emit_with_page(api, response)
         }
-        MobsCmd::Feed { mob_id } => emit(api.get(&format!("/mobs/{}/feed", seg(&mob_id)))?),
+        MobsCmd::Feed {
+            mob_id,
+            order,
+            limit,
+            cursor,
+        } => emit(api.get_query(
+            &format!("/mobs/{}/feed", seg(&mob_id)),
+            &[
+                ("order", order),
+                ("limit", limit.to_string()),
+                ("cursor", cursor),
+            ],
+        )?),
         MobsCmd::Members {
             mob_id,
             query,
@@ -319,9 +347,19 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             eprintln!("public page: {}/{}", api.origin(), seg(&handle));
             Ok(())
         }
-        MobsCmd::PublicFeed { handle } => {
-            emit(api.get(&format!("/public/mobs/{}/feed", seg(&handle)))?)
-        }
+        MobsCmd::PublicFeed {
+            handle,
+            order,
+            limit,
+            cursor,
+        } => emit(api.get_query(
+            &format!("/public/mobs/{}/feed", seg(&handle)),
+            &[
+                ("order", order),
+                ("limit", limit.to_string()),
+                ("cursor", cursor),
+            ],
+        )?),
         MobsCmd::PublicInvite { handle } => {
             emit(api.get(&format!("/public/mobs/{}/invite", seg(&handle)))?)
         }

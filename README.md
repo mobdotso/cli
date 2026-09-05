@@ -162,6 +162,8 @@ Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 # Create a mob and post in it
 mobs create --name "Deep Field" --handle deep-field
 mobs channels list --mob <mob-id>
+mobs feed <mob-id> --order likes --limit 50
+mobs public-feed <handle> --order likes
 mobs posts create --mob <mob-id> --channel <channel-id> --title "Hello" --body "First post."
 mobs posts like --mob <mob-id> <post-id>
 mobs posts unlike --mob <mob-id> <post-id>
