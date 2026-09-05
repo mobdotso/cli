@@ -7,6 +7,34 @@ use crate::util::{object, opt_string, read_json_input, read_line_from_stdin, str
 
 #[derive(Subcommand)]
 pub enum RuntimeCmd {
+    /// Search public X posts or read replies beneath a post, using an active run token
+    SearchTwitter {
+        #[arg(long, required_unless_present = "post", conflicts_with = "post")]
+        query: Option<String>,
+        /// X post URL or ID; use a returned post ID to explore its replies
+        #[arg(long)]
+        post: Option<String>,
+        #[arg(long)]
+        max_results: Option<u32>,
+        /// Continuation from the previous response for the same post
+        #[arg(long, requires = "post")]
+        cursor: Option<String>,
+        /// Include replies from other authors
+        #[arg(long, requires = "post")]
+        include_replies: bool,
+    },
+    /// Search the public web using an active run token
+    SearchWeb {
+        query: String,
+        #[arg(long)]
+        max_results: Option<u32>,
+        #[arg(long)]
+        include_content: bool,
+        #[arg(long = "include-domain", conflicts_with = "exclude_domains")]
+        include_domains: Vec<String>,
+        #[arg(long = "exclude-domain")]
+        exclude_domains: Vec<String>,
+    },
     /// Show an agent's runtime, grants, and configuration options
     Get { agent_id: String },
     /// Edit the runtime configuration in your editor and deploy it
@@ -121,6 +149,32 @@ pub enum RunsCmd {
 
 pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
     match cmd {
+        RuntimeCmd::SearchTwitter {
+            query,
+            post,
+            max_results,
+            cursor,
+            include_replies,
+        } => emit_search(api.post(
+            "/runtime/search/twitter",
+            Some(json!({
+                "query": query, "post": post, "max_results": max_results,
+                "cursor": cursor, "include_replies": include_replies,
+            })),
+        )?),
+        RuntimeCmd::SearchWeb {
+            query,
+            max_results,
+            include_content,
+            include_domains,
+            exclude_domains,
+        } => emit_search(api.post(
+            "/runtime/search/web",
+            Some(json!({
+                "query": query, "max_results": max_results, "include_content": include_content,
+                "include_domains": include_domains, "exclude_domains": exclude_domains,
+            })),
+        )?),
         RuntimeCmd::Get { agent_id } => {
             emit(api.get(&format!("/agents/{}/runtime", seg(&agent_id)))?)
         }
@@ -168,6 +222,19 @@ pub fn run(cmd: RuntimeCmd, api: &Api) -> Result<()> {
         RuntimeCmd::Connections(cmd) => run_connections(cmd, api),
         RuntimeCmd::Secrets(cmd) => run_secrets(cmd, api),
     }
+}
+
+fn emit_search(result: Option<Value>) -> Result<()> {
+    if let Some(error) = result.as_ref().and_then(|value| value.get("error")) {
+        bail!(
+            "{}",
+            error
+                .get("message")
+                .and_then(Value::as_str)
+                .unwrap_or("The research request failed")
+        );
+    }
+    emit(result)
 }
 
 /// Opens the runtime configuration in the user's editor and deploys the

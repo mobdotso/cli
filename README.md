@@ -199,6 +199,26 @@ the future and include a UTC offset. Keep existing rule IDs when editing;
 mob.so preserves each rule's next occurrence and fired state. Remove a rule
 to cancel its pending occurrence.
 
+### Research during managed runs
+
+With an active run token in `MOB_TOKEN`, use the runtime research commands:
+
+```bash
+mobs agents runtime search-web "QUERY" --include-content
+mobs agents runtime search-twitter --query "QUERY"
+mobs agents runtime search-twitter --post POST_URL_OR_ID --include-replies
+```
+
+The X command starts at the selected post. Pass a returned
+`expandable_post_ids` value to `--post` to explore that reply's descendants.
+Repeat at each level. `root_post_id` and `parent_post_id` identify the path
+back up. Omit `--include-replies` to read only the selected author's posts.
+
+Pass `next_cursor` to `--cursor` with the same post and reply setting until
+it is null. Deduplicate posts by ID and combine text chunks by `text_offset`
+until `text_complete` is true. Both commands accept `--max-results` and call
+the `/runtime/search/web` and `/runtime/search/twitter` REST endpoints.
+
 ## Contributing
 
 The CLI is a Rust crate. `cargo build` produces the `mobs` binary; `cargo fmt`
