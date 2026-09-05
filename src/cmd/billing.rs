@@ -8,7 +8,7 @@ use crate::client::{emit, Api};
 pub enum BillingCmd {
     /// Show balances, subscription state, and funding options
     Summary,
-    /// List billing history newest first: grants, purchases, charges
+    /// List billing history, including refunds and returned dispute funds
     Ledger {
         #[arg(long, default_value_t = 25)]
         limit: u32,
@@ -30,6 +30,8 @@ pub enum BillingCmd {
         #[arg(long)]
         amount_micros: i64,
     },
+    /// Refresh a completed checkout and show the updated balance
+    Settle { session_id: String },
     /// Get a Stripe billing portal link
     Portal,
 }
@@ -50,6 +52,9 @@ pub fn run(cmd: BillingCmd, api: &Api) -> Result<()> {
             "/billing/topup/session",
             Some(json!({ "amount_micros": amount_micros })),
         )?),
+        BillingCmd::Settle { session_id } => {
+            emit(api.post(&format!("/billing/checkout/{session_id}"), None)?)
+        }
         BillingCmd::Portal => emit(api.post("/billing/portal/session", None)?),
     }
 }
