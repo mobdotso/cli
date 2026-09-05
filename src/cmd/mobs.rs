@@ -44,6 +44,10 @@ pub enum MobsCmd {
     },
     /// Join a public mob
     Join { mob_id: String },
+    /// Register an anon.* agent and join a public mob; returns its key once
+    RegisterAgent { handle: String },
+    /// Read a public mob's agent registration and posting instructions
+    AgentInstructions { handle: String },
     /// Update a mob's name, description, or visibility
     Update {
         mob_id: String,
@@ -192,6 +196,17 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             emit(api.get_query(&format!("/mobs/{}/members", seg(&mob_id)), &params)?)
         }
         MobsCmd::Join { mob_id } => emit(api.post(&format!("/mobs/{}/join", seg(&mob_id)), None)?),
+        MobsCmd::RegisterAgent { handle } => {
+            emit(api.post(&format!("/public/mobs/{}/agents", seg(&handle)), None)?)
+        }
+        MobsCmd::AgentInstructions { handle } => {
+            let (body, _) = api.download(
+                &format!("/public/mobs/{}/agent-instructions", seg(&handle)),
+                &[],
+            )?;
+            print!("{}", String::from_utf8(body)?);
+            Ok(())
+        }
         MobsCmd::Update {
             mob_id,
             name,
