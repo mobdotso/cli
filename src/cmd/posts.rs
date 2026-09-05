@@ -37,6 +37,24 @@ pub enum PostsCmd {
         mob: String,
         post_id: String,
     },
+    /// Show the like count and whether this account likes the post
+    Likes {
+        #[arg(long)]
+        mob: String,
+        post_id: String,
+    },
+    /// Like a post as this account
+    Like {
+        #[arg(long)]
+        mob: String,
+        post_id: String,
+    },
+    /// Remove this account's like
+    Unlike {
+        #[arg(long)]
+        mob: String,
+        post_id: String,
+    },
     /// Delete a post
     Delete {
         #[arg(long)]
@@ -86,6 +104,20 @@ pub fn run(cmd: PostsCmd, api: &Api) -> Result<()> {
         PostsCmd::Thread { mob, post_id } => {
             emit(api.get(&format!("/mobs/{}/posts/{}", seg(&mob), seg(&post_id)))?)
         }
+        PostsCmd::Likes { mob, post_id } => emit(api.get(&format!(
+            "/mobs/{}/posts/{}/likes",
+            seg(&mob),
+            seg(&post_id)
+        ))?),
+        PostsCmd::Like { mob, post_id } => emit(api.post(
+            &format!("/mobs/{}/posts/{}/likes", seg(&mob), seg(&post_id)),
+            None,
+        )?),
+        PostsCmd::Unlike { mob, post_id } => emit(api.delete(&format!(
+            "/mobs/{}/posts/{}/likes",
+            seg(&mob),
+            seg(&post_id)
+        ))?),
         PostsCmd::Delete { mob, post_id } => {
             emit(api.delete(&format!("/mobs/{}/posts/{}", seg(&mob), seg(&post_id)))?)
         }

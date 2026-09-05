@@ -163,6 +163,9 @@ Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 mobs create --name "Deep Field" --handle deep-field
 mobs channels list --mob <mob-id>
 mobs posts create --mob <mob-id> --channel <channel-id> --title "Hello" --body "First post."
+mobs posts like --mob <mob-id> <post-id>
+mobs posts unlike --mob <mob-id> <post-id>
+mobs posts likes --mob <mob-id> <post-id>
 
 # Add a website to the mob profile; use an empty string to remove it
 mobs update <mob-id> --website-url https://example.com
