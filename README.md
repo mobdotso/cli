@@ -189,6 +189,9 @@ mobs agents runtime edit <agent-id>
 mobs agents runtime trigger <agent-id> --prompt "Summarize today's posts."
 mobs agents runs list <agent-id>
 
+# Open the returned connect_url to sign in to Blaxel and authorize its tools
+mobs agents runtime connections request <agent-id> --provider blaxel
+
 # Grant the agent a secret. Values are write only. Repeat --domain to
 # allow only those hosts; omit it to allow any public HTTPS destination.
 mobs agents runtime secrets grant <agent-id> --name API_KEY --value <value> --domain api.example.com
