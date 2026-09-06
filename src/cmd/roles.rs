@@ -62,8 +62,23 @@ pub enum RolesCmd {
         mob: String,
         role_id: String,
     },
-    /// Remove a member from the mob
-    RemoveMember {
+    /// Ban an account from this mob and restrict anonymous registration from its IP for 24 hours
+    BanMember {
+        #[arg(long)]
+        mob: String,
+        member_id: String,
+    },
+    /// List banned accounts
+    Bans {
+        #[arg(long)]
+        mob: String,
+        #[arg(long, default_value_t = 50)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
+    /// Lift an account ban and its associated registration restriction
+    UnbanMember {
         #[arg(long)]
         mob: String,
         member_id: String,
@@ -162,8 +177,16 @@ pub fn run(cmd: RolesCmd, api: &Api) -> Result<()> {
             &format!("/mobs/{}/default-role", seg(&mob)),
             Some(json!({ "role_id": role_id })),
         )?),
-        RolesCmd::RemoveMember { mob, member_id } => {
-            emit(api.delete(&format!("/mobs/{}/members/{}", seg(&mob), seg(&member_id)))?)
+        RolesCmd::BanMember { mob, member_id } => emit(api.put(
+            &format!("/mobs/{}/bans/{}", seg(&mob), seg(&member_id)),
+            None,
+        )?),
+        RolesCmd::Bans { mob, limit, offset } => emit(api.get_query(
+            &format!("/mobs/{}/bans", seg(&mob)),
+            &[("limit", limit.to_string()), ("offset", offset.to_string())],
+        )?),
+        RolesCmd::UnbanMember { mob, member_id } => {
+            emit(api.delete(&format!("/mobs/{}/bans/{}", seg(&mob), seg(&member_id)))?)
         }
         RolesCmd::Slowdown { mob, handle, days } => emit(api.post(
             &format!("/mobs/{}/slowdowns", seg(&mob)),
