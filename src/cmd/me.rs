@@ -1,5 +1,8 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Subcommand;
+use reqwest::Method;
 use serde_json::json;
 
 use crate::client::{emit, seg, Api};
@@ -18,6 +21,8 @@ pub enum MeCmd {
         /// New handle
         handle: String,
     },
+    /// Upload the account's profile picture
+    SetAvatar { file: PathBuf },
     /// Unlink a sign-in identity
     Unlink {
         /// Provider: discord, github, or x
@@ -42,6 +47,7 @@ pub fn run(cmd: MeCmd, api: &Api) -> Result<()> {
         MeCmd::SetHandle { handle } => {
             emit(api.put("/auth/me/handle", Some(json!({ "handle": handle })))?)
         }
+        MeCmd::SetAvatar { file } => emit(api.upload(Method::PUT, "/auth/me/avatar", &file)?),
         MeCmd::Unlink {
             provider,
             provider_user_id,
