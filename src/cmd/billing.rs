@@ -10,7 +10,7 @@ pub enum BillingCmd {
     Summary,
     /// List billing history, including refunds and returned dispute funds
     Ledger {
-        #[arg(long, default_value_t = 25)]
+        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         /// Cursor from an earlier page
         #[arg(long, default_value = "")]

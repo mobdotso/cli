@@ -114,7 +114,7 @@ pub enum OutboundCmd {
         #[arg(long)]
         mob: String,
         webhook_id: String,
-        #[arg(long, default_value_t = 10)]
+        #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(1..=50))]
         limit: u32,
         #[arg(long, default_value_t = 0)]
         offset: u32,

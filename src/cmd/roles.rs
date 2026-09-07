@@ -72,7 +72,7 @@ pub enum RolesCmd {
     Bans {
         #[arg(long)]
         mob: String,
-        #[arg(long, default_value_t = 50)]
+        #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         #[arg(long, default_value_t = 0)]
         offset: u32,

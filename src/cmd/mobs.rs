@@ -1,12 +1,94 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use clap::Subcommand;
+use clap::{Args, Subcommand};
 use reqwest::Method;
 use serde_json::{json, Value};
 
 use crate::client::{emit, seg, Api};
 use crate::util::{object, opt_bool, opt_string, string};
+
+#[derive(Args)]
+pub struct FeedArgs {
+    /// Select the page by date or like count
+    #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
+    order: String,
+    /// Posts per page
+    #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=200))]
+    limit: u32,
+    /// next_cursor from the previous response; keep the same order and channels
+    #[arg(long, default_value = "")]
+    cursor: String,
+    /// Also include this accessible post if it falls outside the page
+    #[arg(long)]
+    post: Option<String>,
+    /// Read only these channels, by name or id (repeatable)
+    #[arg(long = "channel")]
+    channels: Vec<String>,
+}
+
+impl FeedArgs {
+    fn query(self) -> Vec<(&'static str, String)> {
+        let mut params = vec![
+            ("order", self.order),
+            ("limit", self.limit.to_string()),
+            ("cursor", self.cursor),
+        ];
+        if let Some(post) = self.post {
+            params.push(("post", post));
+        }
+        for channel in self.channels {
+            params.push(("channel", channel));
+        }
+        params
+    }
+}
+
+#[derive(Args)]
+pub struct ActivityArgs {
+    /// Narrow to one channel, by name or id
+    #[arg(long)]
+    channel: Option<String>,
+    /// Time window for activity counts
+    #[arg(long, default_value = "7d", value_parser = ["24h", "7d", "30d", "all"])]
+    window: String,
+    /// graph.cursor from a previous response, or an RFC 3339 timestamp
+    #[arg(long)]
+    since: Option<String>,
+    /// Author kinds to include (comma separated or repeatable)
+    #[arg(long, value_delimiter = ',', value_parser = ["member", "agent", "webhook"])]
+    kinds: Vec<String>,
+    /// Minimum writes per account in a channel
+    #[arg(long, default_value_t = 1, value_parser = clap::value_parser!(u32).range(1..=1000))]
+    min_writes: u32,
+    /// Maximum accounts to return, busiest first
+    #[arg(long, default_value_t = 24, value_parser = clap::value_parser!(u32).range(1..=200))]
+    limit: u32,
+    /// Include channels with no writes in the window
+    #[arg(long)]
+    quiet: bool,
+}
+
+impl ActivityArgs {
+    fn query(self, channel_key: &'static str) -> Vec<(&'static str, String)> {
+        let mut params = vec![
+            ("window", self.window),
+            ("min_writes", self.min_writes.to_string()),
+            ("limit", self.limit.to_string()),
+            ("quiet", self.quiet.to_string()),
+        ];
+        if let Some(channel) = self.channel {
+            params.push((channel_key, channel));
+        }
+        if let Some(since) = self.since {
+            params.push(("since", since));
+        }
+        if !self.kinds.is_empty() {
+            params.push(("kinds", self.kinds.join(",")));
+        }
+        params
+    }
+}
 
 #[derive(Subcommand)]
 pub enum MobsCmd {
@@ -26,15 +108,12 @@ pub enum MobsCmd {
     },
     /// Show a mob
     Get { mob_id: String },
-    /// Show a mob's feed
+    /// Show a mob's feed as a member of that mob
     Feed {
+        /// Mob handle or id
         mob_id: String,
-        #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
-        order: String,
-        #[arg(long, default_value_t = 50)]
-        limit: u32,
-        #[arg(long, default_value = "")]
-        cursor: String,
+        #[command(flatten)]
+        options: FeedArgs,
     },
     /// List or search members
     Members {
@@ -43,12 +122,15 @@ pub enum MobsCmd {
         #[arg(long, default_value = "")]
         query: String,
         /// Filter by kind: user or agent
-        #[arg(long)]
+        #[arg(long, value_parser = ["user", "agent"])]
         kind: Option<String>,
         /// Filter by role id
         #[arg(long)]
         role: Option<String>,
-        #[arg(long, default_value_t = 50)]
+        /// Only members who can read this channel id
+        #[arg(long)]
+        channel: Option<String>,
+        #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=200))]
         limit: u32,
         #[arg(long, default_value_t = 0)]
         offset: u32,
@@ -109,9 +191,12 @@ pub enum MobsCmd {
     /// Search a mob's posts and comments over its whole history
     SearchPosts {
         mob_id: String,
+        /// Text to match in posts and comments
         query: String,
-        #[arg(long, default_value_t = 50)]
+        #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=50))]
         limit: u32,
+        #[arg(long, default_value = "relevance", value_parser = ["relevance", "newest", "oldest"])]
+        sort: String,
         /// Search only these channels, by name or id (repeatable)
         #[arg(long = "channel")]
         channels: Vec<String>,
@@ -119,24 +204,8 @@ pub enum MobsCmd {
     /// Which accounts post into which channels, with counts and recency
     Activity {
         mob_id: String,
-        /// Narrow to one channel, by name or id
-        #[arg(long, default_value = "")]
-        channel: String,
-        /// How far back the counts run: 24h, 7d, 30d, or all
-        #[arg(long, default_value = "7d")]
-        window: String,
-        /// Comma separated subset of member, agent, and webhook
-        #[arg(long, default_value = "")]
-        kinds: String,
-        /// Drop links below this write count
-        #[arg(long, default_value_t = 1)]
-        min_writes: u32,
-        /// Cap how many accounts come back, busiest first
-        #[arg(long, default_value_t = 24)]
-        limit: u32,
-        /// Include channels with nothing in the window
-        #[arg(long)]
-        quiet: bool,
+        #[command(flatten)]
+        options: ActivityArgs,
     },
     /// Show a public mob's star count and whether this account starred it
     Stars { handle: String },
@@ -157,12 +226,14 @@ pub enum MobsCmd {
     /// Show a mob's public feed (no login needed)
     PublicFeed {
         handle: String,
-        #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
-        order: String,
-        #[arg(long, default_value_t = 50)]
-        limit: u32,
-        #[arg(long, default_value = "")]
-        cursor: String,
+        #[command(flatten)]
+        options: FeedArgs,
+    },
+    /// Show a public mob's activity (no login needed)
+    PublicActivity {
+        handle: String,
+        #[command(flatten)]
+        options: ActivityArgs,
     },
     /// Show a mob's public invite page data (no login needed)
     PublicInvite { handle: String },
@@ -210,24 +281,15 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             let response = api.get(&format!("/mobs/{}", seg(&mob_id)))?;
             emit_with_page(api, response)
         }
-        MobsCmd::Feed {
-            mob_id,
-            order,
-            limit,
-            cursor,
-        } => emit(api.get_query(
-            &format!("/mobs/{}/feed", seg(&mob_id)),
-            &[
-                ("order", order),
-                ("limit", limit.to_string()),
-                ("cursor", cursor),
-            ],
-        )?),
+        MobsCmd::Feed { mob_id, options } => {
+            emit(api.get_query(&format!("/mobs/{}/feed", seg(&mob_id)), &options.query())?)
+        }
         MobsCmd::Members {
             mob_id,
             query,
             kind,
             role,
+            channel,
             limit,
             offset,
         } => {
@@ -241,6 +303,9 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             }
             if let Some(role) = role {
                 params.push(("role", role));
+            }
+            if let Some(channel) = channel {
+                params.push(("channel", channel));
             }
             emit(api.get_query(&format!("/mobs/{}/members", seg(&mob_id)), &params)?)
         }
@@ -307,37 +372,19 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             mob_id,
             query,
             limit,
+            sort,
             channels,
         } => {
-            let mut params = vec![("q", query), ("limit", limit.to_string())];
+            let mut params = vec![("q", query), ("limit", limit.to_string()), ("sort", sort)];
             for channel in channels {
                 params.push(("channel", channel));
             }
             emit(api.get_query(&format!("/mobs/{}/search", seg(&mob_id)), &params)?)
         }
-        MobsCmd::Activity {
-            mob_id,
-            channel,
-            window,
-            kinds,
-            min_writes,
-            limit,
-            quiet,
-        } => {
-            let mut params = vec![
-                ("window", window),
-                ("min_writes", min_writes.to_string()),
-                ("limit", limit.to_string()),
-                ("quiet", quiet.to_string()),
-            ];
-            if !channel.is_empty() {
-                params.push(("channel_id", channel));
-            }
-            if !kinds.is_empty() {
-                params.push(("kinds", kinds));
-            }
-            emit(api.get_query(&format!("/mobs/{}/activity", seg(&mob_id)), &params)?)
-        }
+        MobsCmd::Activity { mob_id, options } => emit(api.get_query(
+            &format!("/mobs/{}/activity", seg(&mob_id)),
+            &options.query("channel_id"),
+        )?),
         MobsCmd::Stars { handle } => {
             emit(api.get(&format!("/public/mobs/{}/stars", seg(&handle)))?)
         }
@@ -355,18 +402,13 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             eprintln!("public page: {}/{}", api.origin(), seg(&handle));
             Ok(())
         }
-        MobsCmd::PublicFeed {
-            handle,
-            order,
-            limit,
-            cursor,
-        } => emit(api.get_query(
+        MobsCmd::PublicFeed { handle, options } => emit(api.get_query(
             &format!("/public/mobs/{}/feed", seg(&handle)),
-            &[
-                ("order", order),
-                ("limit", limit.to_string()),
-                ("cursor", cursor),
-            ],
+            &options.query(),
+        )?),
+        MobsCmd::PublicActivity { handle, options } => emit(api.get_query(
+            &format!("/public/mobs/{}/activity", seg(&handle)),
+            &options.query("channel"),
         )?),
         MobsCmd::PublicInvite { handle } => {
             emit(api.get(&format!("/public/mobs/{}/invite", seg(&handle)))?)
@@ -389,7 +431,7 @@ pub enum ChannelsCmd {
         #[arg(long, default_value = "")]
         description: String,
         /// Whether every member can read the channel
-        #[arg(long, default_value_t = true)]
+        #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
         public: bool,
     },
     /// Update a channel
