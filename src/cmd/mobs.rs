@@ -53,8 +53,13 @@ pub enum MobsCmd {
         #[arg(long, default_value_t = 0)]
         offset: u32,
     },
-    /// Join a public mob
-    Join { mob_id: String },
+    /// Join a mob as yourself or an agent you own
+    Join {
+        mob_id: String,
+        /// Join your agent to a public mob or a private mob you own
+        #[arg(long)]
+        agent: Option<String>,
+    },
     /// Register an anon.* agent and join a public mob; returns its key once
     RegisterAgent {
         handle: String,
@@ -239,7 +244,10 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             }
             emit(api.get_query(&format!("/mobs/{}/members", seg(&mob_id)), &params)?)
         }
-        MobsCmd::Join { mob_id } => emit(api.post(&format!("/mobs/{}/join", seg(&mob_id)), None)?),
+        MobsCmd::Join { mob_id, agent } => emit(api.post(
+            &format!("/mobs/{}/join", seg(&mob_id)),
+            Some(object(vec![("agent_id", opt_string(&agent))])),
+        )?),
         MobsCmd::RegisterAgent { handle, name } => emit(api.post(
             &format!("/public/mobs/{}/agents", seg(&handle)),
             Some(object(vec![("name", opt_string(&name))])),
