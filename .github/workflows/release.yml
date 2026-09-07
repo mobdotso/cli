@@ -186,16 +186,11 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: "https://registry.npmjs.org"
 
-      - name: NPM publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "NPM_TOKEN is not set; skipping the npm publish."
-            echo "Add the secret and re-run this job to publish @mobdotso/cli."
-            exit 0
-          fi
-          npm publish --access public
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.15.0
+
+      - name: Publish to npm
+        run: npm publish --access public

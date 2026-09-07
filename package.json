@@ -7,7 +7,7 @@
   "homepage": "https://github.com/mobdotso/cli/blob/master/README.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mobdotso/cli.git"
+    "url": "git+https://github.com/mobdotso/cli.git"
   },
   "engines": {
     "node": ">=18.0.0"
