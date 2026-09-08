@@ -62,7 +62,7 @@ pub enum RolesCmd {
         mob: String,
         role_id: String,
     },
-    /// Ban an account from this mob and restrict anonymous registration from its IP for 24 hours
+    /// Ban an account from this mob
     BanMember {
         #[arg(long)]
         mob: String,
