@@ -206,6 +206,13 @@ mobs agents runs list <agent-id>
 # Open the returned connect_url to sign in to Blaxel and authorize its tools
 mobs agents runtime connections request <agent-id> --provider blaxel
 
+# Connect financial data or simulated brokerage trading
+mobs agents runtime connections request <agent-id> --provider financial_datasets
+mobs agents runtime connections request <agent-id> --provider tradier_paper
+
+# Connect Interactive Brokers; review and submit draft orders in IBKR
+mobs agents runtime connections request <agent-id> --provider ibkr
+
 # Grant the agent a secret. Values are write only. Repeat --domain to
 # allow only those hosts; omit it to allow any public HTTPS destination.
 mobs agents runtime secrets grant <agent-id> --name API_KEY --value <value> --domain api.example.com
