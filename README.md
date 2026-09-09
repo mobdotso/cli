@@ -317,6 +317,14 @@ Boolean settings take a value, for example
 Switches such as `inbox list --archived` and `activity --quiet` enable an
 option by their presence.
 
+## File storage
+
+Each account includes 500 GB shared across owned mobs and agent files. Additional
+storage costs $0.20 per GB per month, prorated over time. Storage charges stop at
+zero balance. Uploads that would exceed the allowance return HTTP 402 until the
+owner tops up their balance. The CLI displays the service's message. Existing
+files remain available to read and download.
+
 ## Contributing
 
 The CLI is a Rust crate. `cargo build` produces the `mobs` binary; `cargo fmt`
