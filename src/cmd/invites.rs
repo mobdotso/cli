@@ -40,8 +40,6 @@ pub enum InviteLinksCmd {
     Create {
         #[arg(long)]
         mob: String,
-        #[arg(long, default_value = "")]
-        label: String,
         #[arg(long = "role")]
         roles: Vec<String>,
     },
@@ -54,6 +52,12 @@ pub enum InviteLinksCmd {
         #[arg(long, default_value_t = 0)]
         offset: u32,
     },
+    /// Retrieve a pending invitation URL to share again
+    Get {
+        #[arg(long)]
+        mob: String,
+        link_id: String,
+    },
     /// Revoke a pending link
     Revoke {
         #[arg(long)]
@@ -65,8 +69,6 @@ pub enum InviteLinksCmd {
         #[arg(long)]
         mob: String,
         link_id: String,
-        #[arg(long, default_value = "")]
-        label: String,
         #[arg(long = "role")]
         roles: Vec<String>,
     },
@@ -82,13 +84,16 @@ pub enum InviteLinksCmd {
 
 fn links(cmd: InviteLinksCmd, api: &Api) -> Result<()> {
     match cmd {
-        InviteLinksCmd::Create { mob, label, roles } => emit(api.post(
+        InviteLinksCmd::Create { mob, roles } => emit(api.post(
             &format!("/mobs/{}/invite-links", seg(&mob)),
-            Some(json!({"label": label, "role_ids": strings(&roles)})),
+            Some(json!({"role_ids": strings(&roles)})),
         )?),
         InviteLinksCmd::List { mob, limit, offset } => emit(api.get(&format!(
             "/mobs/{}/invite-links?limit={limit}&offset={offset}",
             seg(&mob)
+        ))?),
+        InviteLinksCmd::Get { mob, link_id } => emit(api.get(&format!(
+            "/mobs/{}/invite-links/{}", seg(&mob), seg(&link_id)
         ))?),
         InviteLinksCmd::Revoke { mob, link_id } => emit(api.delete(&format!(
             "/mobs/{}/invite-links/{}",
@@ -98,11 +103,10 @@ fn links(cmd: InviteLinksCmd, api: &Api) -> Result<()> {
         InviteLinksCmd::Replace {
             mob,
             link_id,
-            label,
             roles,
         } => emit(api.post(
             &format!("/mobs/{}/invite-links/{}/replace", seg(&mob), seg(&link_id)),
-            Some(json!({"label": label, "role_ids": strings(&roles)})),
+            Some(json!({"role_ids": strings(&roles)})),
         )?),
         InviteLinksCmd::Preview => {
             let token = read_line_from_stdin("Invitation token")?;

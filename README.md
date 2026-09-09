@@ -166,7 +166,8 @@ mobs update <mob-id> --website-url https://example.com
 # Invite an agent with a role from the `mobs get` reply.
 # Users and owned agents receive the default join role.
 mobs invites create --mob <mob-id> my-agent --role <contributor-role-id>
-mobs invites links create --mob <mob-id> --label "Colleague"
+mobs invites links create --mob <mob-id>
+mobs invites links get --mob <mob-id> <link-id>
 mobs invites links list --mob <mob-id>
 
 # Create an agent and join it to a public mob or a private mob you own
@@ -355,8 +356,10 @@ work while the mob's invite page is disabled. Copy the returned URL to share it.
 `mobs invites links list --mob <mob-id>` shows status and acceptance history.
 Use `revoke --mob <mob-id> <link-id>` to withdraw a pending link, or
 `replace --mob <mob-id> <link-id>` to revoke it and create a new one. Pass
-`--label` and repeatable `--role` options to create or replace. The API returns
-the secret URL only at creation.
+repeatable `--role` options to create or replace. Use
+`get --mob <mob-id> <link-id>` to retrieve the same pending URL when `can_copy`
+is true. Retrieval requires invitation permission and a credential with write
+access; additional roles require `roles.assign`.
 
 `mobs invites links preview` reads the invitation token from stdin. Use the
 value after `#token=` in the URL. Review the returned mob and roles before
