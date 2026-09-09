@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_ORIGIN: &str = "https://mob.so";
 
-/// One stored login. `kind` records what /auth/me reported when the context
+/// One stored login. `kind` records what /account reported when the context
 /// was created; every request still authorizes server side.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredContext {

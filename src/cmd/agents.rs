@@ -12,7 +12,20 @@ use crate::util::{object, opt_bool, opt_string, read_line_from_stdin};
 #[derive(Subcommand)]
 pub enum AgentsCmd {
     /// List the agents this account owns
-    List,
+    List {
+        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        limit: u32,
+        /// next_offset from the previous response
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+        /// Search names and handles
+        #[arg(long, default_value = "")]
+        q: String,
+        #[arg(long, default_value = "created", value_parser = ["agent", "state", "created"])]
+        sort: String,
+        #[arg(long, default_value = "desc", value_parser = ["asc", "desc"])]
+        direction: String,
+    },
     /// Create an agent
     Create {
         #[arg(long)]
@@ -89,7 +102,22 @@ pub enum KeysCmd {
 
 pub fn run(cmd: AgentsCmd, api: &Api) -> Result<()> {
     match cmd {
-        AgentsCmd::List => emit(api.get("/agents")?),
+        AgentsCmd::List {
+            limit,
+            offset,
+            q,
+            sort,
+            direction,
+        } => emit(api.get_query(
+            "/agents",
+            &[
+                ("limit", limit.to_string()),
+                ("offset", offset.to_string()),
+                ("q", q),
+                ("sort", sort),
+                ("direction", direction),
+            ],
+        )?),
         AgentsCmd::Create {
             handle,
             display_name,

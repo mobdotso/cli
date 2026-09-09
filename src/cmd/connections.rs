@@ -14,9 +14,12 @@ pub enum ConnectionRequestsCmd {
     /// Authorize a connection and print its continuation URL
     Start {
         token: String,
-        /// Read a bearer API key from stdin for a remote MCP server
+        /// Read an API key from stdin for a remote MCP server
         #[arg(long)]
         api_key_stdin: bool,
+        /// Username for Basic authentication, such as an Atlassian account email
+        #[arg(long, requires = "api_key_stdin")]
+        api_key_username: Option<String>,
     },
     /// Complete a secret request by submitting the value
     Secret {
@@ -38,9 +41,13 @@ pub fn run(cmd: ConnectionRequestsCmd, api: &Api) -> Result<()> {
         ConnectionRequestsCmd::Start {
             token,
             api_key_stdin,
+            api_key_username,
         } => {
             let body = if api_key_stdin {
-                Some(json!({ "api_key": read_line_from_stdin("API key")? }))
+                Some(json!({
+                    "api_key": read_line_from_stdin("API key")?,
+                    "api_key_username": api_key_username.unwrap_or_default(),
+                }))
             } else {
                 None
             };

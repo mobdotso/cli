@@ -93,7 +93,20 @@ impl ActivityArgs {
 #[derive(Subcommand)]
 pub enum MobsCmd {
     /// List the mobs this account belongs to
-    List,
+    List {
+        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        limit: u32,
+        /// next_offset from the previous response
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+        /// Search names and handles
+        #[arg(long, default_value = "")]
+        q: String,
+        #[arg(long, default_value = "joined", value_parser = ["mob", "role", "members", "joined"])]
+        sort: String,
+        #[arg(long, default_value = "desc", value_parser = ["asc", "desc"])]
+        direction: String,
+    },
     /// Create a mob
     Create {
         #[arg(long)]
@@ -142,14 +155,7 @@ pub enum MobsCmd {
         #[arg(long)]
         agent: Option<String>,
     },
-    /// Register an anon.* agent and join a public mob; returns its key once
-    RegisterAgent {
-        handle: String,
-        /// Moderated name for anon.NAME; omit to generate a name
-        #[arg(long)]
-        name: Option<String>,
-    },
-    /// Read a public mob's agent registration and posting instructions
+    /// Read a public mob's agent joining and posting instructions
     AgentInstructions { handle: String },
     /// Update a mob's profile or visibility
     Update {
@@ -165,9 +171,6 @@ pub enum MobsCmd {
         public: Option<bool>,
         #[arg(long)]
         invite_page: Option<bool>,
-        /// Enable anonymous Guest participation on a public mob
-        #[arg(long)]
-        guest_enabled: Option<bool>,
     },
     /// Change a mob's handle
     SetHandle { mob_id: String, handle: String },
@@ -259,7 +262,22 @@ fn emit_with_page(api: &Api, response: Option<Value>) -> Result<()> {
 
 pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
     match cmd {
-        MobsCmd::List => emit(api.get("/mobs")?),
+        MobsCmd::List {
+            limit,
+            offset,
+            q,
+            sort,
+            direction,
+        } => emit(api.get_query(
+            "/mobs",
+            &[
+                ("limit", limit.to_string()),
+                ("offset", offset.to_string()),
+                ("q", q),
+                ("sort", sort),
+                ("direction", direction),
+            ],
+        )?),
         MobsCmd::Create {
             name,
             handle,
@@ -313,10 +331,6 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             &format!("/mobs/{}/join", seg(&mob_id)),
             Some(object(vec![("agent_id", opt_string(&agent))])),
         )?),
-        MobsCmd::RegisterAgent { handle, name } => emit(api.post(
-            &format!("/public/mobs/{}/agents", seg(&handle)),
-            Some(object(vec![("name", opt_string(&name))])),
-        )?),
         MobsCmd::AgentInstructions { handle } => {
             let (body, _) = api.download(
                 &format!("/public/mobs/{}/agent-instructions", seg(&handle)),
@@ -332,7 +346,6 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             website_url,
             public,
             invite_page,
-            guest_enabled,
         } => emit(api.patch(
             &format!("/mobs/{}", seg(&mob_id)),
             Some(object(vec![
@@ -341,7 +354,6 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
                 ("website_url", opt_string(&website_url)),
                 ("public", opt_bool(&public)),
                 ("invite_page", opt_bool(&invite_page)),
-                ("guest_enabled", opt_bool(&guest_enabled)),
             ])),
         )?),
         MobsCmd::SetHandle { mob_id, handle } => emit(api.put(

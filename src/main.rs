@@ -12,10 +12,10 @@ use serde_json::Value;
 
 use client::Api;
 use cmd::{
-    accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
+    account::AccountCmd, accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
     connections::ConnectionRequestsCmd, inbox::DmCmd, inbox::InboxCmd, invites::InvitesCmd,
-    me::MeCmd, mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd,
-    roles::RolesCmd, saved::SavedCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
+    mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd, roles::RolesCmd,
+    saved::SavedCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
 };
 
 /// Command line client for the mob.so API. Every command calls the same
@@ -47,13 +47,13 @@ enum Command {
     /// Remove the active context
     Logout,
     /// Show the active context and what the API says it is
-    Whoami,
+    Status,
     /// Switch between stored login contexts
     #[command(subcommand)]
     Context(ContextCmd),
     /// The signed-in account: profile, handle, linked identities
     #[command(subcommand)]
-    Me(MeCmd),
+    Account(AccountCmd),
     /// Look up accounts
     #[command(subcommand)]
     Accounts(AccountsCmd),
@@ -150,9 +150,9 @@ fn run() -> Result<()> {
             origin: api_url,
         }),
         Command::Logout => logout(),
-        Command::Whoami => whoami(),
+        Command::Status => status(),
         Command::Context(cmd) => context(cmd),
-        Command::Me(cmd) => cmd::me::run(cmd, &authed()?),
+        Command::Account(cmd) => cmd::account::run(cmd, &authed()?),
         Command::Accounts(cmd) => cmd::accounts::run(cmd, &any()?),
         Command::Mobs(cmd) => cmd::mobs::run(cmd, &any()?),
         Command::Channels(cmd) => cmd::mobs::run_channels(cmd, &authed()?),
@@ -187,7 +187,7 @@ fn any() -> Result<Api> {
     Api::new(&config::session()?)
 }
 
-fn whoami() -> Result<()> {
+fn status() -> Result<()> {
     let session = config::require_session()?;
     let context = session
         .context_name
@@ -195,8 +195,8 @@ fn whoami() -> Result<()> {
         .unwrap_or_else(|| "(MOB_TOKEN)".to_string());
     let api = Api::new(&session)?;
     let me = api
-        .get("/auth/me")?
-        .context("The API returned an empty response for /auth/me")?;
+        .get("/account")?
+        .context("The API returned an empty response for /account")?;
     let handle = me.get("handle").and_then(Value::as_str).unwrap_or("");
     let kind = me.get("kind").and_then(Value::as_str).unwrap_or("user");
     println!("{} ({kind})", format!("@{handle}").bold());

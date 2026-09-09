@@ -38,7 +38,7 @@ pub fn login(args: LoginArgs) -> Result<()> {
     finish_login(&origin, token, args.name)
 }
 
-/// Verifies the credential against /auth/me and stores it as a context.
+/// Verifies the credential against /account and stores it as a context.
 /// Agent client keys (mob_ag_*) land here too; the API reports their kind.
 fn finish_login(origin: &str, token: String, name: Option<String>) -> Result<()> {
     let token = token.trim().to_string();
@@ -53,8 +53,8 @@ fn finish_login(origin: &str, token: String, name: Option<String>) -> Result<()>
     };
     let api = Api::new(&session)?;
     let me = api
-        .get("/auth/me")?
-        .context("The API returned an empty response for /auth/me")?;
+        .get("/account")?
+        .context("The API returned an empty response for /account")?;
     let handle = me
         .get("handle")
         .and_then(Value::as_str)

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -9,6 +9,10 @@ use serde_json::{json, Value};
 
 // Exercise parsing, dispatch, and HTTP encoding together without a live account.
 fn request(args: &[&str]) -> (String, reqwest::Url, Value) {
+    request_with_stdin(args, None)
+}
+
+fn request_with_stdin(args: &[&str], input: Option<&str>) -> (String, reqwest::Url, Value) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let address = listener.local_addr().unwrap();
@@ -58,7 +62,7 @@ fn request(args: &[&str]) -> (String, reqwest::Url, Value) {
             .unwrap();
         (method, url, body)
     });
-    let output = Command::new(env!("CARGO_BIN_EXE_mobs"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_mobs"))
         .args(args)
         .env("MOB_API_URL", format!("http://{address}"))
         .env("MOB_TOKEN", "test-token")
@@ -70,8 +74,21 @@ fn request(args: &[&str]) -> (String, reqwest::Url, Value) {
                 address.port()
             )),
         )
-        .output()
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .unwrap();
+    if let Some(input) = input {
+        child
+            .stdin
+            .as_mut()
+            .unwrap()
+            .write_all(input.as_bytes())
+            .unwrap();
+    }
+    drop(child.stdin.take());
+    let output = child.wait_with_output().unwrap();
     assert!(
         output.status.success(),
         "{args:?}: {}",
@@ -93,6 +110,49 @@ fn get(args: &[&str], path: &str, query: Value) {
             .push(value.into_owned());
     }
     assert_eq!(serde_json::to_value(actual).unwrap(), query);
+}
+
+#[test]
+fn connection_start_sends_api_token_and_username() {
+    let (method, url, body) = request_with_stdin(
+        &[
+            "connection-requests",
+            "start",
+            "link-token",
+            "--api-key-stdin",
+            "--api-key-username",
+            "owner@example.com",
+        ],
+        Some("test-api-token\n"),
+    );
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/connection-requests/link-token/start");
+    assert_eq!(
+        body,
+        json!({
+            "api_key": "test-api-token", "api_key_username": "owner@example.com",
+        })
+    );
+}
+
+#[test]
+fn account_commands_reach_the_account_routes() {
+    get(&["status"], "/account", json!({}));
+    get(&["account", "get"], "/account", json!({}));
+
+    let (method, url, body) = request(&["account", "update", "--description", "Research"]);
+    assert_eq!(method, "PATCH");
+    assert_eq!(url.path(), "/account");
+    assert_eq!(body, json!({"description": "Research"}));
+
+    let (method, url, body) = request(&["account", "set-handle", "researcher"]);
+    assert_eq!(method, "PUT");
+    assert_eq!(url.path(), "/account/handle");
+    assert_eq!(body, json!({"handle": "researcher"}));
+
+    let (method, url, _) = request(&["account", "unlink", "github", "provider-id"]);
+    assert_eq!(method, "DELETE");
+    assert_eq!(url.path(), "/account/identities/github/provider-id");
 }
 
 #[test]

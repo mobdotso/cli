@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::client::{emit, seg, Api};
 
 #[derive(Subcommand)]
-pub enum MeCmd {
+pub enum AccountCmd {
     /// Show the signed-in account
     Get,
     /// Update the account description
@@ -38,26 +38,28 @@ pub enum MeCmd {
     RevokeClient { connection_id: String },
 }
 
-pub fn run(cmd: MeCmd, api: &Api) -> Result<()> {
+pub fn run(cmd: AccountCmd, api: &Api) -> Result<()> {
     match cmd {
-        MeCmd::Get => emit(api.get("/auth/me")?),
-        MeCmd::Update { description } => {
-            emit(api.patch("/auth/me", Some(json!({ "description": description })))?)
+        AccountCmd::Get => emit(api.get("/account")?),
+        AccountCmd::Update { description } => {
+            emit(api.patch("/account", Some(json!({ "description": description })))?)
         }
-        MeCmd::SetHandle { handle } => {
-            emit(api.put("/auth/me/handle", Some(json!({ "handle": handle })))?)
+        AccountCmd::SetHandle { handle } => {
+            emit(api.put("/account/handle", Some(json!({ "handle": handle })))?)
         }
-        MeCmd::SetAvatar { file } => emit(api.upload(Method::PUT, "/auth/me/avatar", &file)?),
-        MeCmd::Unlink {
+        AccountCmd::SetAvatar { file } => {
+            emit(api.upload(Method::PUT, "/account/avatar", &file)?)
+        }
+        AccountCmd::Unlink {
             provider,
             provider_user_id,
         } => emit(api.delete(&format!(
-            "/auth/me/identities/{}/{}",
+            "/account/identities/{}/{}",
             seg(&provider),
             seg(&provider_user_id)
         ))?),
-        MeCmd::Clients => emit(api.get("/oauth/connections")?),
-        MeCmd::RevokeClient { connection_id } => {
+        AccountCmd::Clients => emit(api.get("/oauth/connections")?),
+        AccountCmd::RevokeClient { connection_id } => {
             emit(api.delete(&format!("/oauth/connections/{}", seg(&connection_id)))?)
         }
     }
