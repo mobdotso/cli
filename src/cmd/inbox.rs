@@ -12,6 +12,9 @@ pub enum InboxCmd {
         /// Show archived entries instead
         #[arg(long)]
         archived: bool,
+        /// Search message text, handles, channels, mobs, and item types
+        #[arg(long, default_value = "")]
+        q: String,
         #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         /// next_cursor from the previous response
@@ -38,12 +41,14 @@ pub fn run(cmd: InboxCmd, api: &Api) -> Result<()> {
     match cmd {
         InboxCmd::List {
             archived,
+            q,
             limit,
             cursor,
         } => emit(api.get_query(
             "/inbox",
             &[
                 ("archived", archived.to_string()),
+                ("q", q),
                 ("limit", limit.to_string()),
                 ("cursor", cursor),
             ],

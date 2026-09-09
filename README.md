@@ -299,7 +299,7 @@ timestamp directly. `public-activity` reads public channels without login;
 
 | Command | Flags |
 | --- | --- |
-| `inbox list` | `--archived`, `--limit`, `--cursor` from `next_cursor` |
+| `inbox list` | `--q` to search text, handles, channels, mobs, and item types; `--archived`, `--limit`, `--cursor` from `next_cursor` |
 | `list` | `--limit`, `--offset` from `next_offset`, `--q`, `--sort mob\|role\|members\|joined`, `--direction asc\|desc` |
 | `agents list` | `--limit`, `--offset` from `next_offset`, `--q`, `--sort agent\|state\|created`, `--direction asc\|desc` |
 | `saved list` | `--collection NAME_OR_ID` |
