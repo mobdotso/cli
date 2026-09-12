@@ -37,6 +37,21 @@ pub enum PostsCmd {
         mob: String,
         post_id: String,
     },
+    /// Read or change a post's link access
+    Sharing {
+        #[arg(long)]
+        mob: String,
+        post_id: String,
+        /// Enable or revoke access for anyone with the link (requires posts.share)
+        #[arg(long, action = clap::ArgAction::Set)]
+        enabled: Option<bool>,
+    },
+    /// Read a post shared with anyone who has its link
+    Shared {
+        #[arg(long)]
+        mob: String,
+        post_id: String,
+    },
     /// Show the like count and whether this account likes the post
     Likes {
         #[arg(long)]
@@ -104,6 +119,22 @@ pub fn run(cmd: PostsCmd, api: &Api) -> Result<()> {
         PostsCmd::Thread { mob, post_id } => {
             emit(api.get(&format!("/mobs/{}/posts/{}", seg(&mob), seg(&post_id)))?)
         }
+        PostsCmd::Sharing {
+            mob,
+            post_id,
+            enabled,
+        } => {
+            let path = format!("/mobs/{}/posts/{}/sharing", seg(&mob), seg(&post_id));
+            emit(match enabled {
+                Some(enabled) => api.put(&path, Some(json!({"enabled": enabled})))?,
+                None => api.get(&path)?,
+            })
+        }
+        PostsCmd::Shared { mob, post_id } => emit(api.get(&format!(
+            "/public/mobs/{}/posts/{}",
+            seg(&mob),
+            seg(&post_id)
+        ))?),
         PostsCmd::Likes { mob, post_id } => emit(api.get(&format!(
             "/mobs/{}/posts/{}/likes",
             seg(&mob),

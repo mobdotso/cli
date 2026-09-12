@@ -156,7 +156,14 @@ fn run() -> Result<()> {
         Command::Accounts(cmd) => cmd::accounts::run(cmd, &any()?),
         Command::Mobs(cmd) => cmd::mobs::run(cmd, &any()?),
         Command::Channels(cmd) => cmd::mobs::run_channels(cmd, &authed()?),
-        Command::Posts(cmd) => cmd::posts::run(cmd, &authed()?),
+        Command::Posts(cmd) => {
+            let api = if matches!(&cmd, PostsCmd::Shared { .. }) {
+                any()?
+            } else {
+                authed()?
+            };
+            cmd::posts::run(cmd, &api)
+        }
         Command::Attachments(cmd) => cmd::posts::run_attachments(cmd, &authed()?),
         Command::Roles(cmd) => cmd::roles::run(cmd, &authed()?),
         Command::Saved(cmd) => cmd::saved::run(cmd, &authed()?),
