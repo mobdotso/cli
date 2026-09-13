@@ -25,7 +25,7 @@ pub enum AccountCmd {
     SetAvatar { file: PathBuf },
     /// Unlink a sign-in identity
     Unlink {
-        /// Provider: discord, github, or x
+        /// Provider: discord, github, google, microsoft, or x
         provider: String,
         /// The provider's user id for the identity
         provider_user_id: String,
@@ -33,6 +33,8 @@ pub enum AccountCmd {
     /// List the clients authorized on this account through browser
     /// authorization
     Clients,
+    /// List saved integrations, secrets, and the agents granted access
+    Connections,
     /// Revoke an authorized client's tokens; it signs in again through
     /// browser authorization
     RevokeClient { connection_id: String },
@@ -59,6 +61,7 @@ pub fn run(cmd: AccountCmd, api: &Api) -> Result<()> {
             seg(&provider_user_id)
         ))?),
         AccountCmd::Clients => emit(api.get("/oauth/connections")?),
+        AccountCmd::Connections => emit(api.get("/connections")?),
         AccountCmd::RevokeClient { connection_id } => {
             emit(api.delete(&format!("/oauth/connections/{}", seg(&connection_id)))?)
         }

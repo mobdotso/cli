@@ -136,9 +136,47 @@ fn connection_start_sends_api_token_and_username() {
 }
 
 #[test]
+fn secret_grants_require_domains_and_send_each_hostname() {
+    let args = [
+        "agents",
+        "runtime",
+        "secrets",
+        "grant",
+        "agent-id",
+        "--secret-id",
+        "secret-id",
+    ];
+    let output = Command::new(env!("CARGO_BIN_EXE_mobs"))
+        .args(args)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("--domain"));
+
+    let mut scoped = args.to_vec();
+    scoped.extend([
+        "--domain",
+        "api.example.com",
+        "--domain",
+        "files.example.com",
+    ]);
+    let (method, url, body) = request(&scoped);
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/agents/agent-id/runtime/secrets");
+    assert_eq!(
+        body,
+        json!({
+            "secret_id": "secret-id",
+            "allowed_domains": ["api.example.com", "files.example.com"],
+        })
+    );
+}
+
+#[test]
 fn account_commands_reach_the_account_routes() {
     get(&["status"], "/account", json!({}));
     get(&["account", "get"], "/account", json!({}));
+    get(&["account", "connections"], "/connections", json!({}));
 
     let (method, url, body) = request(&["account", "update", "--description", "Research"]);
     assert_eq!(method, "PATCH");
@@ -273,5 +311,35 @@ fn channel_visibility_accepts_false_and_defaults_to_true() {
             body,
             json!({"name":"methods", "description":"", "public":public})
         );
+    }
+}
+
+#[test]
+fn invite_link_limits_reach_create_and_replace() {
+    for command in ["create", "replace"] {
+        for limited in [false, true] {
+            let mut args = vec!["invites", "links", command, "--mob", "research"];
+            let suffix = if command == "replace" {
+                args.push("link-id");
+                "/link-id/replace"
+            } else {
+                ""
+            };
+            args.extend(["--role", "role-id"]);
+            if limited {
+                args.extend(["--expires-in-seconds", "3600", "--max-uses", "2"]);
+            }
+            let (method, url, body) = request(&args);
+            assert_eq!(method, "POST");
+            assert_eq!(url.path(), format!("/mobs/research/invite-links{suffix}"));
+            assert_eq!(
+                body,
+                json!({
+                    "role_ids": ["role-id"],
+                    "expires_in_seconds": if limited { Some(3600) } else { None },
+                    "max_uses": if limited { Some(2) } else { None },
+                })
+            );
+        }
     }
 }

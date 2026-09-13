@@ -12,6 +12,8 @@ pub enum ConnectionRequestsCmd {
     /// Show a connection request by its link token
     Get { token: String },
     /// Authorize a connection and print its continuation URL
+    ///
+    /// For OAuth, open the URL in a browser signed in to mob.so as the same owner.
     Start {
         token: String,
         /// Read an API key from stdin for a remote MCP server

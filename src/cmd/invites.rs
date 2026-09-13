@@ -7,7 +7,7 @@ use crate::util::{read_line_from_stdin, strings};
 
 #[derive(Subcommand)]
 pub enum InvitesCmd {
-    /// Single-use invitation links for people joining a mob
+    /// Invitation links for people joining a mob
     #[command(subcommand)]
     Links(InviteLinksCmd),
     /// List invites addressed to this account
@@ -42,6 +42,12 @@ pub enum InviteLinksCmd {
         mob: String,
         #[arg(long = "role")]
         roles: Vec<String>,
+        /// Expire after this many seconds; omit for no expiration
+        #[arg(long, value_parser = clap::value_parser!(u32).range(60..=2147483647))]
+        expires_in_seconds: Option<u32>,
+        /// Maximum number of joins; omit for unlimited uses
+        #[arg(long, value_parser = clap::value_parser!(u32).range(1..=2147483647))]
+        max_uses: Option<u32>,
     },
     /// List link status and history
     List {
@@ -64,13 +70,19 @@ pub enum InviteLinksCmd {
         mob: String,
         link_id: String,
     },
-    /// Revoke a pending link and create its replacement with these roles
+    /// Revoke a pending link and create its replacement with these roles and limits
     Replace {
         #[arg(long)]
         mob: String,
         link_id: String,
         #[arg(long = "role")]
         roles: Vec<String>,
+        /// Expire after this many seconds; omit for no expiration
+        #[arg(long, value_parser = clap::value_parser!(u32).range(60..=2147483647))]
+        expires_in_seconds: Option<u32>,
+        /// Maximum number of joins; omit for unlimited uses
+        #[arg(long, value_parser = clap::value_parser!(u32).range(1..=2147483647))]
+        max_uses: Option<u32>,
     },
     /// Preview a link; reads the token after #token= from stdin
     Preview,
@@ -84,16 +96,27 @@ pub enum InviteLinksCmd {
 
 fn links(cmd: InviteLinksCmd, api: &Api) -> Result<()> {
     match cmd {
-        InviteLinksCmd::Create { mob, roles } => emit(api.post(
+        InviteLinksCmd::Create {
+            mob,
+            roles,
+            expires_in_seconds,
+            max_uses,
+        } => emit(api.post(
             &format!("/mobs/{}/invite-links", seg(&mob)),
-            Some(json!({"role_ids": strings(&roles)})),
+            Some(json!({
+                "role_ids": strings(&roles),
+                "expires_in_seconds": expires_in_seconds,
+                "max_uses": max_uses,
+            })),
         )?),
         InviteLinksCmd::List { mob, limit, offset } => emit(api.get(&format!(
             "/mobs/{}/invite-links?limit={limit}&offset={offset}",
             seg(&mob)
         ))?),
         InviteLinksCmd::Get { mob, link_id } => emit(api.get(&format!(
-            "/mobs/{}/invite-links/{}", seg(&mob), seg(&link_id)
+            "/mobs/{}/invite-links/{}",
+            seg(&mob),
+            seg(&link_id)
         ))?),
         InviteLinksCmd::Revoke { mob, link_id } => emit(api.delete(&format!(
             "/mobs/{}/invite-links/{}",
@@ -104,9 +127,15 @@ fn links(cmd: InviteLinksCmd, api: &Api) -> Result<()> {
             mob,
             link_id,
             roles,
+            expires_in_seconds,
+            max_uses,
         } => emit(api.post(
             &format!("/mobs/{}/invite-links/{}/replace", seg(&mob), seg(&link_id)),
-            Some(json!({"role_ids": strings(&roles)})),
+            Some(json!({
+                "role_ids": strings(&roles),
+                "expires_in_seconds": expires_in_seconds,
+                "max_uses": max_uses,
+            })),
         )?),
         InviteLinksCmd::Preview => {
             let token = read_line_from_stdin("Invitation token")?;

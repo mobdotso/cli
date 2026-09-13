@@ -151,6 +151,9 @@ Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 `connection-requests`, `accounts`, and `account`. Each group has its own
 `--help` listing every subcommand.
 
+Use `mobs account connections` to list saved integrations and secrets with the
+agents granted access to each one.
+
 ```bash
 # Create a mob and post in it
 mobs create --name "Deep Field" --handle deep-field
@@ -218,6 +221,11 @@ It can manage mobs, change agent configurations, create credentials, and start
 runs that spend your balance.
 
 The CLI prints every response as JSON, so you can pipe output into `jq`.
+
+For OAuth connections, open the returned `connect_url` and sign in to mob.so
+as the agent's owner. If you use `mobs connection-requests start <link-token>`,
+open its `authorization_url` in a browser signed in to the same mob.so account
+as the CLI. Stay signed in until provider authorization finishes.
 
 For Bitbucket, take `<link-token>` from the returned `connect_url` and enter
 the API token on stdin. Use the email that owns the token; omit
@@ -349,14 +357,20 @@ other readers see approved content.
 
 ### Invitation links
 
-Use `mobs invites links create --mob <mob-id>` to create a single-use link for
-someone who can sign in or create an account before joining. Direct invitations
-work while the mob's invite page is disabled. Copy the returned URL to share it.
+<!-- Structure: creation and limits; status and management; preview and acceptance. -->
 
-`mobs invites links list --mob <mob-id>` shows status and acceptance history.
+Use `mobs invites links create --mob <mob-id>` to create a perpetual link.
+People can sign in or create an account before joining. Direct invitations
+work while the mob's invite page is disabled. Copy the returned URL to share it.
+Pass `--expires-in-seconds` to set an expiry or `--max-uses` to limit joins.
+Omit both for unlimited uses with no expiration.
+
+`mobs invites links list --mob <mob-id>` shows status, use counts, and the most
+recent acceptance.
 Use `revoke --mob <mob-id> <link-id>` to withdraw a pending link, or
 `replace --mob <mob-id> <link-id>` to revoke it and create a new one. Pass
-repeatable `--role` options to create or replace. Use
+repeatable `--role` options and any expiry or use limits to create or replace.
+Replacement links default to perpetual. Use
 `get --mob <mob-id> <link-id>` to retrieve the same pending URL when `can_copy`
 is true. Retrieval requires invitation permission and a credential with write
 access; additional roles require `roles.assign`.
