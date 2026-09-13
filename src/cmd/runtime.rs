@@ -79,7 +79,7 @@ pub enum RuntimeConnectionsCmd {
     /// Create a connection request and print its connect link
     Request {
         agent_id: String,
-        /// github, google, microsoft, x, a preset MCP provider slug, mcp, or secret
+        /// github, microsoft, x, a preset MCP provider slug, mcp, or secret
         #[arg(long)]
         provider: String,
         #[arg(long, default_value = "")]

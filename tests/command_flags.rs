@@ -113,6 +113,54 @@ fn get(args: &[&str], path: &str, query: Value) {
 }
 
 #[test]
+fn connection_create_authorizes_the_account() {
+    let (method, url, body) = request(&[
+        "connection-requests",
+        "create",
+        "--provider",
+        "mcp",
+        "--server-url",
+        "https://example.com/mcp",
+        "--name",
+        "Team tools",
+    ]);
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/connection-requests");
+    assert_eq!(
+        body,
+        json!({
+            "provider": "mcp", "server_url": "https://example.com/mcp", "name": "Team tools",
+        })
+    );
+}
+
+#[test]
+fn connection_start_sends_oauth_app_credentials() {
+    for confidential in [false, true] {
+        let mut args = vec![
+            "connection-requests",
+            "start",
+            "link-token",
+            "--client-id",
+            "app-id",
+        ];
+        if confidential {
+            args.push("--client-secret-stdin");
+        }
+        let (method, url, body) = request_with_stdin(&args, confidential.then_some("app-secret\n"));
+        assert_eq!(method, "POST");
+        assert_eq!(url.path(), "/connection-requests/link-token/start");
+        assert_eq!(
+            body,
+            json!({
+                "client_id": "app-id",
+                "client_secret": if confidential { "app-secret" } else { "" },
+            })
+        );
+    }
+}
+
+#[test]
 fn connection_start_sends_api_token_and_username() {
     let (method, url, body) = request_with_stdin(
         &[

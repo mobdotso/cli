@@ -152,7 +152,9 @@ Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 `--help` listing every subcommand.
 
 Use `mobs account connections` to list saved integrations and secrets with the
-agents granted access to each one.
+agents granted access to each one. `mobs connection-requests create --provider
+<provider>` creates an authorization link for your account. Grant a saved
+connection with `mobs agents runtime connections grant <agent-id> --connection <connection-id>`.
 
 ```bash
 # Create a mob and post in it
@@ -223,9 +225,17 @@ runs that spend your balance.
 The CLI prints every response as JSON, so you can pipe output into `jq`.
 
 For OAuth connections, open the returned `connect_url` and sign in to mob.so
-as the agent's owner. If you use `mobs connection-requests start <link-token>`,
+as the request's owner. If you use `mobs connection-requests start <link-token>`,
 open its `authorization_url` in a browser signed in to the same mob.so account
 as the CLI. Stay signed in until provider authorization finishes.
+
+CRM presets include `hubspot`, `close`, `pipedrive`, and `attio`. Open the
+connection link, choose your account, and approve access.
+
+For X or a custom MCP server that requires your own OAuth app, enter its
+credentials on the connect page, or run
+`mobs connection-requests start <link-token> --client-id <client-id> --client-secret-stdin`
+and supply the secret on stdin. Public clients take only `--client-id`.
 
 For Bitbucket, take `<link-token>` from the returned `connect_url` and enter
 the API token on stdin. Use the email that owns the token; omit
