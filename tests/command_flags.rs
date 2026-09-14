@@ -13,6 +13,19 @@ fn request(args: &[&str]) -> (String, reqwest::Url, Value) {
 }
 
 fn request_with_stdin(args: &[&str], input: Option<&str>) -> (String, reqwest::Url, Value) {
+    let (method, url, body, _) = request_with_response(
+        args,
+        input,
+        b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}",
+    );
+    (method, url, body)
+}
+
+fn request_with_response(
+    args: &[&str],
+    input: Option<&str>,
+    response: &'static [u8],
+) -> (String, reqwest::Url, Value, std::process::Output) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let address = listener.local_addr().unwrap();
@@ -57,9 +70,7 @@ fn request_with_stdin(args: &[&str], input: Option<&str>) -> (String, reqwest::U
         } else {
             serde_json::from_slice(&bytes).unwrap()
         };
-        stream
-            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}")
-            .unwrap();
+        stream.write_all(response).unwrap();
         (method, url, body)
     });
     let mut child = Command::new(env!("CARGO_BIN_EXE_mobs"))
@@ -94,7 +105,30 @@ fn request_with_stdin(args: &[&str], input: Option<&str>) -> (String, reqwest::U
         "{args:?}: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    server.join().unwrap()
+    let (method, url, body) = server.join().unwrap();
+    (method, url, body, output)
+}
+
+#[test]
+fn trace_downloads_preserve_json_lines_for_an_agent_or_run() {
+    for run in [None, Some("run id")] {
+        let mut args = vec!["agents", "runs", "download-traces", "agent id"];
+        let mut path = "/agents/agent%20id".to_string();
+        if let Some(run_id) = run {
+            args.extend(["--run", run_id]);
+            path.push_str("/runs/run%20id");
+        }
+        path.push_str("/traces/download");
+        let (method, url, body, output) = request_with_response(
+            &args,
+            None,
+            b"HTTP/1.1 200 OK\r\nContent-Type: application/x-ndjson\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n9\r\n{\"id\":1}\n\r\n9\r\n{\"id\":2}\n\r\n0\r\n\r\n",
+        );
+        assert_eq!(method, "GET");
+        assert_eq!(url.path(), path);
+        assert_eq!(body, Value::Null);
+        assert_eq!(output.stdout, b"{\"id\":1}\n{\"id\":2}\n");
+    }
 }
 
 fn get(args: &[&str], path: &str, query: Value) {

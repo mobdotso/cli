@@ -118,6 +118,16 @@ pub enum RunsCmd {
     List { agent_id: String },
     /// Show a run with its source and traces
     Get { agent_id: String, run_id: String },
+    /// Download retained traces as JSON Lines
+    DownloadTraces {
+        agent_id: String,
+        /// Download only this run; omit to include all of the agent's runs
+        #[arg(long)]
+        run: Option<String>,
+        /// Write to this file instead of stdout
+        #[arg(long, short = 'o')]
+        output: Option<std::path::PathBuf>,
+    },
     /// Cancel a queued or running run
     Cancel { agent_id: String, run_id: String },
 }
@@ -473,6 +483,18 @@ pub fn run_runs(cmd: RunsCmd, api: &Api) -> Result<()> {
         RunsCmd::List { agent_id } => emit(api.get(&format!("/agents/{}/runs", seg(&agent_id)))?),
         RunsCmd::Get { agent_id, run_id } => {
             emit(api.get(&format!("/agents/{}/runs/{}", seg(&agent_id), seg(&run_id)))?)
+        }
+        RunsCmd::DownloadTraces {
+            agent_id,
+            run,
+            output,
+        } => {
+            let mut path = format!("/agents/{}", seg(&agent_id));
+            if let Some(run_id) = run {
+                path.push_str(&format!("/runs/{}", seg(&run_id)));
+            }
+            path.push_str("/traces/download");
+            api.download_to(&path, output.as_deref())
         }
         RunsCmd::Cancel { agent_id, run_id } => emit(api.post(
             &format!("/agents/{}/runs/{}/cancel", seg(&agent_id), seg(&run_id)),

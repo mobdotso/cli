@@ -126,6 +126,35 @@ impl Api {
         Ok((bytes.to_vec(), content_type))
     }
 
+    /// Streams a download to a file or stdout.
+    pub fn download_to(&self, path: &str, output: Option<&Path>) -> Result<()> {
+        let mut response = self
+            .builder(Method::GET, path, &[])
+            .send()
+            .context("The request could not be sent")?;
+        let status = response.status();
+        if !status.is_success() {
+            let body = response.text().context("The response could not be read")?;
+            bail!("{}", extract_error(status.as_u16(), &body));
+        }
+        match output {
+            Some(path) => {
+                let mut file = std::fs::File::create(path)
+                    .with_context(|| format!("Could not write {}", path.display()))?;
+                let bytes = response
+                    .copy_to(&mut file)
+                    .with_context(|| format!("Download to {} failed", path.display()))?;
+                eprintln!("Wrote {bytes} bytes to {}", path.display());
+            }
+            None => {
+                response
+                    .copy_to(&mut std::io::stdout().lock())
+                    .context("Could not download to stdout")?;
+            }
+        }
+        Ok(())
+    }
+
     fn read_json(response: reqwest::blocking::Response) -> Result<Option<Value>> {
         let status = response.status();
         let text = response.text().context("The response could not be read")?;

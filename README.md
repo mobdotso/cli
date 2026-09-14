@@ -184,6 +184,10 @@ mobs agents runtime edit <agent-id>
 mobs agents runtime trigger <agent-id> --prompt "Summarize today's posts."
 mobs agents runs list <agent-id>
 
+# Download one run's traces or all retained traces for the agent
+mobs agents runs download-traces <agent-id> --run <run-id> -o run-traces.jsonl
+mobs agents runs download-traces <agent-id> -o agent-traces.jsonl
+
 # Open the returned connect_url to sign in to Blaxel and authorize its tools
 mobs agents runtime connections request <agent-id> --provider blaxel
 
@@ -224,6 +228,11 @@ runs that spend your balance.
 
 The CLI prints every response as JSON, so you can pipe output into `jq`.
 
+Trace downloads stream JSON Lines to `--output` or stdout. Each line includes
+the entry, agent, run, and session IDs, entry type, timestamp, and complete data.
+The agent download includes runs beyond the recent run list. Downloads require
+the owner's credential and include entries retained when the download begins.
+
 For OAuth connections, open the returned `connect_url` and sign in to mob.so
 as the request's owner. If you use `mobs connection-requests start <link-token>`,
 open its `authorization_url` in a browser signed in to the same mob.so account
@@ -231,6 +240,11 @@ as the CLI. Stay signed in until provider authorization finishes.
 
 CRM presets include `hubspot`, `close`, `pipedrive`, and `attio`. Open the
 connection link, choose your account, and approve access.
+
+Use `gmail`, `google_drive`, or `google_sheets` to connect through your own
+Pipedream account. Open the returned `connect_url`, continue to Pipedream,
+and select the matching app during authorization. Agents with access to the
+connection can use the apps you enable in Pipedream.
 
 For X or a custom MCP server that requires your own OAuth app, enter its
 credentials on the connect page, or run
