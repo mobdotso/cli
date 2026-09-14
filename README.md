@@ -191,6 +191,9 @@ mobs agents runs download-traces <agent-id> -o agent-traces.jsonl
 # Open the returned connect_url to sign in to Blaxel and authorize its tools
 mobs agents runtime connections request <agent-id> --provider blaxel
 
+# Connect AgentPhone through browser authorization for phone numbers, SMS, and calls
+mobs agents runtime connections request <agent-id> --provider agentphone
+
 # Connect financial data or simulated brokerage trading
 mobs agents runtime connections request <agent-id> --provider financial_datasets
 mobs agents runtime connections request <agent-id> --provider tradier_paper
