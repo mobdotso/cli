@@ -111,6 +111,32 @@ fn request_with_response(
 }
 
 #[test]
+fn inline_connection_requests_use_stable_ids_and_secret_domains() {
+    let (method, url, _) = request(&["connection-requests", "get", "request-id", "--by-id"]);
+    assert_eq!(method, "GET");
+    assert_eq!(url.path(), "/connection-requests/request-id/form");
+    let (method, url, body) = request_with_stdin(
+        &[
+            "connection-requests",
+            "secret",
+            "request-id",
+            "--by-id",
+            "--name",
+            "TEST_KEY",
+            "--domain",
+            "api.example.com",
+        ],
+        Some("test-only-value\n"),
+    );
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/connection-requests/request-id/form/secret");
+    assert_eq!(
+        body,
+        json!({"name": "TEST_KEY", "value": "test-only-value", "allowed_domains": ["api.example.com"]})
+    );
+}
+
+#[test]
 fn trace_downloads_preserve_json_lines_for_an_agent_or_run() {
     for run in [None, Some("run id")] {
         let mut args = vec!["agents", "runs", "download-traces", "agent id"];

@@ -213,7 +213,7 @@ mobs agents runtime connections request <agent-id> --provider ibkr
 mobs agents runtime connections request <agent-id> --provider mob
 
 # Grant the agent a secret. Values are write only. Repeat --domain to
-# allow only those hosts; omit it to allow any public HTTPS destination.
+# allow each hostname that needs the secret.
 mobs agents runtime secrets grant <agent-id> --name API_KEY --value <value> --domain api.example.com
 
 # Browse an agent's workspace and granted folders
@@ -231,6 +231,10 @@ runs that spend your balance.
 
 The CLI prints every response as JSON, so you can pipe output into `jq`.
 
+Agent run responses use `event_kind: "owner_message"` for work assigned through
+Chat. Inspect these runs with the same `agents runs list` and `agents runs get`
+commands used for other run sources.
+
 Trace downloads stream JSON Lines to `--output` or stdout. Each line includes
 the entry, agent, run, and session IDs, entry type, timestamp, and complete data.
 The agent download includes runs beyond the recent run list. Downloads require
@@ -240,6 +244,12 @@ For OAuth connections, open the returned `connect_url` and sign in to mob.so
 as the request's owner. If you use `mobs connection-requests start <link-token>`,
 open its `authorization_url` in a browser signed in to the same mob.so account
 as the CLI. Stay signed in until provider authorization finishes.
+
+Chat presents connection and secret requests in inline Apps. To continue a
+request from the CLI using its stable ID, add `--by-id` to
+`mobs connection-requests get`, `start`, or `secret`. An agent grant requires
+at least one `--domain`. Account secrets can be stored and granted later.
+Omit `--value` to enter the value on stdin.
 
 CRM presets include `hubspot`, `close`, `pipedrive`, and `attio`. Open the
 connection link, choose your account, and approve access.
@@ -266,6 +276,18 @@ and `schedule_at`, such as `2027-05-12T09:00:00-07:00`. The date must be in
 the future and include a UTC offset. Keep existing rule IDs when editing;
 mob.so preserves each rule's next occurrence and fired state. Remove a rule
 to cancel its pending occurrence.
+
+## Connected services
+
+Use services saved to your account from the CLI. Discover the connection ID and its tools before calling one:
+
+```bash
+mobs connections list
+mobs connections tools CONNECTION_ID
+mobs connections call CONNECTION_ID TOOL_NAME --arguments '{"query":"recent updates"}'
+```
+
+`mobs connections request CONNECTION_ID METHOD PATH` calls a connected provider's REST API. Pass JSON through `--query` and `--body` when needed. `mobs connections repositories CONNECTION_ID` lists a GitHub connection's repositories. `mobs connections resource CONNECTION_ID URI` reads an advertised MCP App resource.
 
 ## Read and filter
 

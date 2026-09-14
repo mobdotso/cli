@@ -12,10 +12,21 @@ use serde_json::Value;
 
 use client::Api;
 use cmd::{
-    account::AccountCmd, accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
-    connections::ConnectionRequestsCmd, inbox::InboxCmd, invites::InvitesCmd, mobs::ChannelsCmd,
-    mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd, roles::RolesCmd, saved::SavedCmd,
-    service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
+    account::AccountCmd,
+    accounts::AccountsCmd,
+    agents::AgentsCmd,
+    billing::BillingCmd,
+    connections::{ConnectionRequestsCmd, ConnectionsCmd},
+    inbox::InboxCmd,
+    invites::InvitesCmd,
+    mobs::ChannelsCmd,
+    mobs::MobsCmd,
+    posts::AttachmentsCmd,
+    posts::PostsCmd,
+    roles::RolesCmd,
+    saved::SavedCmd,
+    service_keys::ServiceKeysCmd,
+    webhooks::WebhooksCmd,
 };
 
 /// Command line client for the mob.so API. Every command calls the same
@@ -98,6 +109,9 @@ enum Command {
     /// Connection requests: finish OAuth links and secret requests
     #[command(subcommand, name = "connection-requests")]
     ConnectionRequests(ConnectionRequestsCmd),
+    /// Use services connected to your account
+    #[command(subcommand)]
+    Connections(ConnectionsCmd),
     /// Upgrade the CLI through the channel that installed it
     Upgrade {
         /// Show the install method and upgrade command without upgrading
@@ -174,6 +188,7 @@ fn run() -> Result<()> {
         Command::Billing(cmd) => cmd::billing::run(cmd, &authed()?),
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),
         Command::ConnectionRequests(cmd) => cmd::connections::run(cmd, &authed()?),
+        Command::Connections(cmd) => cmd::connections::run_connected(cmd, &authed()?),
         Command::Upgrade { check } => upgrade::run(check),
     };
     if notify && result.is_ok() {
