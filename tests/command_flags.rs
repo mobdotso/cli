@@ -41,6 +41,7 @@ fn request_with_response(
                 Err(error) => panic!("{error}"),
             }
         };
+        stream.set_nonblocking(false).unwrap();
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();
@@ -491,4 +492,19 @@ fn content_and_run_pages_forward_cursors_and_full_reads() {
     ] {
         get(&args, path, query);
     }
+}
+
+#[test]
+fn notification_commands_encode_preferences_and_owner_messages() {
+    let (method, url, body) = request(&["notifications", "research", "--level", "all"]);
+    assert_eq!(method, "PATCH");
+    assert_eq!(url.path(), "/mobs/research/notifications");
+    assert_eq!(body, json!({ "notification_level": "all" }));
+    let (method, url, _) = request(&["notifications", "research"]);
+    assert_eq!(method, "GET");
+    assert_eq!(url.path(), "/mobs/research/notifications");
+    let (method, url, body) = request(&["notify-owner", "Research is ready"]);
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/runtime/notify-owner");
+    assert_eq!(body, json!({ "body": "Research is ready" }));
 }

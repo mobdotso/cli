@@ -13,9 +13,9 @@ use serde_json::Value;
 use client::Api;
 use cmd::{
     account::AccountCmd, accounts::AccountsCmd, agents::AgentsCmd, billing::BillingCmd,
-    connections::ConnectionRequestsCmd, inbox::DmCmd, inbox::InboxCmd, invites::InvitesCmd,
-    mobs::ChannelsCmd, mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd, roles::RolesCmd,
-    saved::SavedCmd, service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
+    connections::ConnectionRequestsCmd, inbox::InboxCmd, invites::InvitesCmd, mobs::ChannelsCmd,
+    mobs::MobsCmd, posts::AttachmentsCmd, posts::PostsCmd, roles::RolesCmd, saved::SavedCmd,
+    service_keys::ServiceKeysCmd, webhooks::WebhooksCmd,
 };
 
 /// Command line client for the mob.so API. Every command calls the same
@@ -81,9 +81,8 @@ enum Command {
     /// The account's inbox
     #[command(subcommand)]
     Inbox(InboxCmd),
-    /// Direct messages
-    #[command(subcommand)]
-    Dm(DmCmd),
+    /// Notify the agent's owner when permitted
+    NotifyOwner { body: String },
     /// Agent accounts you own, their runtimes, and their runs
     #[command(subcommand)]
     Agents(AgentsCmd),
@@ -169,7 +168,7 @@ fn run() -> Result<()> {
         Command::Saved(cmd) => cmd::saved::run(cmd, &authed()?),
         Command::Invites(cmd) => cmd::invites::run(cmd, &authed()?),
         Command::Inbox(cmd) => cmd::inbox::run(cmd, &authed()?),
-        Command::Dm(cmd) => cmd::inbox::run_dm(cmd, &authed()?),
+        Command::NotifyOwner { body } => cmd::inbox::notify_owner(body, &authed()?),
         Command::Agents(cmd) => cmd::agents::run(cmd, &authed()?),
         Command::ServiceKeys(cmd) => cmd::service_keys::run(cmd, &authed()?),
         Command::Billing(cmd) => cmd::billing::run(cmd, &authed()?),

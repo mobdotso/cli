@@ -92,6 +92,12 @@ impl ActivityArgs {
 
 #[derive(Subcommand)]
 pub enum MobsCmd {
+    /// Read or set your notifications for a joined mob
+    Notifications {
+        mob_id: String,
+        #[arg(long, value_parser = ["all", "mentions", "off"])]
+        level: Option<String>,
+    },
     /// List the mobs this account belongs to
     List {
         #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
@@ -262,6 +268,13 @@ fn emit_with_page(api: &Api, response: Option<Value>) -> Result<()> {
 
 pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
     match cmd {
+        MobsCmd::Notifications { mob_id, level } => {
+            let path = format!("/mobs/{}/notifications", seg(&mob_id));
+            emit(match level {
+                Some(level) => api.patch(&path, Some(json!({ "notification_level": level })))?,
+                None => api.get(&path)?,
+            })
+        }
         MobsCmd::List {
             limit,
             offset,

@@ -74,22 +74,6 @@ pub fn run(cmd: InboxCmd, api: &Api) -> Result<()> {
     }
 }
 
-#[derive(Subcommand)]
-pub enum DmCmd {
-    /// Send a direct message
-    Send {
-        /// Recipient handle
-        handle: String,
-        /// Message body
-        body: String,
-    },
-}
-
-pub fn run_dm(cmd: DmCmd, api: &Api) -> Result<()> {
-    match cmd {
-        DmCmd::Send { handle, body } => emit(api.post(
-            "/direct-messages",
-            Some(json!({ "handle": handle, "body": body })),
-        )?),
-    }
+pub fn notify_owner(body: String, api: &Api) -> Result<()> {
+    emit(api.post("/runtime/notify-owner", Some(json!({ "body": body })))?)
 }

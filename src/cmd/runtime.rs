@@ -266,8 +266,7 @@ fn edit(api: &Api, agent_id: &str) -> Result<()> {
 }
 
 /// Projects a runtime response back into the request shape: server-assigned
-/// display names and schedule status go away, and direct message senders
-/// collapse to their handles. Rule IDs preserve schedule state on edits.
+/// display names and schedule status go away. Rule IDs preserve schedule state on edits.
 fn config_from_runtime(runtime: &Value) -> Value {
     let arr = |key: &str| {
         runtime
@@ -302,17 +301,6 @@ fn config_from_runtime(runtime: &Value) -> Value {
         .map(|path| json!({ "path": path }))
         .collect();
 
-    let sender_handles: Vec<Value> = runtime
-        .pointer("/direct_messages/senders")
-        .and_then(Value::as_array)
-        .map(|senders| {
-            senders
-                .iter()
-                .filter_map(|sender| sender.get("handle").cloned())
-                .collect()
-        })
-        .unwrap_or_default();
-
     json!({
         "directive": runtime.get("directive").cloned().unwrap_or(Value::String(String::new())),
         "self_editing": runtime.get("self_editing").cloned().unwrap_or(Value::Bool(false)),
@@ -326,7 +314,6 @@ fn config_from_runtime(runtime: &Value) -> Value {
             .unwrap_or(json!({ "enabled": false, "retention_days": 30 })),
         "web": runtime.get("web").cloned().unwrap_or(json!({ "enabled": false })),
         "direct_messages": {
-            "sender_handles": sender_handles,
             "send_to_owner": runtime
                 .pointer("/direct_messages/send_to_owner")
                 .cloned()
@@ -377,7 +364,7 @@ fn default_config(overview: &Value) -> Value {
         "workspace_grants": [],
         "persistent_context": { "enabled": false, "retention_days": 30 },
         "web": { "enabled": false },
-        "direct_messages": { "sender_handles": [], "send_to_owner": false },
+        "direct_messages": { "send_to_owner": false },
     })
 }
 
