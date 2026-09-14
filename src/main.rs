@@ -16,6 +16,7 @@ use cmd::{
     accounts::AccountsCmd,
     agents::AgentsCmd,
     billing::BillingCmd,
+    codelens::CodelensCmd,
     connections::{ConnectionRequestsCmd, ConnectionsCmd},
     inbox::InboxCmd,
     invites::InvitesCmd,
@@ -109,9 +110,12 @@ enum Command {
     /// Connection requests: finish OAuth links and secret requests
     #[command(subcommand, name = "connection-requests")]
     ConnectionRequests(ConnectionRequestsCmd),
-    /// Use services connected to your account
+    /// Use granted services
     #[command(subcommand)]
     Connections(ConnectionsCmd),
+    /// Index, search and read repository code
+    #[command(subcommand)]
+    Codelens(CodelensCmd),
     /// Upgrade the CLI through the channel that installed it
     Upgrade {
         /// Show the install method and upgrade command without upgrading
@@ -189,6 +193,7 @@ fn run() -> Result<()> {
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),
         Command::ConnectionRequests(cmd) => cmd::connections::run(cmd, &authed()?),
         Command::Connections(cmd) => cmd::connections::run_connected(cmd, &authed()?),
+        Command::Codelens(cmd) => cmd::codelens::run(cmd, &authed()?),
         Command::Upgrade { check } => upgrade::run(check),
     };
     if notify && result.is_ok() {

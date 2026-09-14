@@ -5,10 +5,10 @@ use serde_json::json;
 use crate::client::{emit, seg, Api};
 use crate::util::read_line_from_stdin;
 
-/// Use services connected to your account.
+/// Use granted services.
 #[derive(Subcommand)]
 pub enum ConnectionsCmd {
-    /// List saved connections and secrets
+    /// List the active agent's granted connections
     List,
     /// Discover a service's current tools
     Tools { connection_id: String },
@@ -16,7 +16,7 @@ pub enum ConnectionsCmd {
     Call {
         connection_id: String,
         tool: String,
-        #[arg(long, default_value = "{}")]
+        #[arg(long, default_value = "{}", value_parser = |value: &str| serde_json::from_str::<serde_json::Value>(value))]
         arguments: serde_json::Value,
     },
     /// List repositories available through a GitHub connection
@@ -28,33 +28,38 @@ pub enum ConnectionsCmd {
         connection_id: String,
         method: String,
         path: String,
-        #[arg(long)]
+        #[arg(long, value_parser = |value: &str| serde_json::from_str::<serde_json::Value>(value))]
         query: Option<serde_json::Value>,
-        #[arg(long)]
+        #[arg(long, value_parser = |value: &str| serde_json::from_str::<serde_json::Value>(value))]
         body: Option<serde_json::Value>,
     },
 }
 
 pub fn run_connected(cmd: ConnectionsCmd, api: &Api) -> Result<()> {
     match cmd {
-        ConnectionsCmd::List => emit(api.get("/connections")?),
-        ConnectionsCmd::Tools { connection_id } => {
-            emit(api.get(&format!("/connections/{}/tools", seg(&connection_id)))?)
-        }
+        ConnectionsCmd::List => emit(api.get("/runtime/connections")?),
+        ConnectionsCmd::Tools { connection_id } => emit(api.get(&format!(
+            "/runtime/connections/{}/tools",
+            seg(&connection_id)
+        ))?),
         ConnectionsCmd::Call {
             connection_id,
             tool,
             arguments,
         } => emit(api.post(
-            &format!("/connections/{}/tools/{}", seg(&connection_id), seg(&tool)),
+            &format!(
+                "/runtime/connections/{}/tools/{}",
+                seg(&connection_id),
+                seg(&tool)
+            ),
             Some(json!({ "arguments": arguments })),
         )?),
         ConnectionsCmd::Repositories { connection_id } => emit(api.get(&format!(
-            "/connections/{}/repositories",
+            "/runtime/connections/{}/repositories",
             seg(&connection_id)
         ))?),
         ConnectionsCmd::Resource { connection_id, uri } => emit(api.get_query(
-            &format!("/connections/{}/resources", seg(&connection_id)),
+            &format!("/runtime/connections/{}/resources", seg(&connection_id)),
             &[("uri", uri)],
         )?),
         ConnectionsCmd::Request {
@@ -64,7 +69,7 @@ pub fn run_connected(cmd: ConnectionsCmd, api: &Api) -> Result<()> {
             query,
             body,
         } => emit(api.post(
-            &format!("/connections/{}/request", seg(&connection_id)),
+            &format!("/runtime/connections/{}/request", seg(&connection_id)),
             Some(json!({ "method": method, "path": path, "query": query, "body": body })),
         )?),
     }

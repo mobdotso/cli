@@ -534,3 +534,101 @@ fn notification_commands_encode_preferences_and_owner_messages() {
     assert_eq!(url.path(), "/runtime/notify-owner");
     assert_eq!(body, json!({ "body": "Research is ready" }));
 }
+
+#[test]
+fn codelens_uses_repository_and_connection_filters() {
+    get(
+        &["codelens", "repositories"],
+        "/codelens/repositories",
+        json!({}),
+    );
+    get(
+        &[
+            "codelens",
+            "search",
+            "lookup",
+            "--repository",
+            "acme/tools",
+            "--connection",
+            "connection-id",
+            "--limit",
+            "5",
+        ],
+        "/codelens/search",
+        json!({"q":["lookup"], "repository":["acme/tools"], "connection_id":["connection-id"], "limit":["5"]}),
+    );
+    get(
+        &[
+            "codelens",
+            "read",
+            "acme/tools",
+            "src/main.py",
+            "--connection",
+            "connection-id",
+            "--start-line",
+            "2",
+            "--end-line",
+            "8",
+        ],
+        "/codelens/file",
+        json!({"repository":["acme/tools"], "path":["src/main.py"], "connection_id":["connection-id"], "start_line":["2"], "end_line":["8"]}),
+    );
+    let (method, url, body) = request(&[
+        "codelens",
+        "index",
+        "acme/tools",
+        "--connection",
+        "connection-id",
+    ]);
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/codelens/repositories");
+    assert_eq!(
+        body,
+        json!({"repository":"acme/tools", "connection_id":"connection-id"})
+    );
+}
+
+#[test]
+fn connected_service_commands_use_agent_routes() {
+    get(&["connections", "list"], "/runtime/connections", json!({}));
+    for command in ["tools", "repositories"] {
+        get(
+            &["connections", command, "connection-id"],
+            &format!("/runtime/connections/connection-id/{command}"),
+            json!({}),
+        );
+    }
+    get(
+        &[
+            "connections",
+            "resource",
+            "connection-id",
+            "ui://service/app",
+        ],
+        "/runtime/connections/connection-id/resources",
+        json!({"uri":["ui://service/app"]}),
+    );
+    let (method, url, body) = request(&[
+        "connections",
+        "call",
+        "connection-id",
+        "report",
+        "--arguments",
+        "{\"query\":\"sales\"}",
+    ]);
+    assert_eq!(
+        (method.as_str(), url.path()),
+        ("POST", "/runtime/connections/connection-id/tools/report")
+    );
+    assert_eq!(body, json!({"arguments":{"query":"sales"}}));
+    let (method, url, body) =
+        request(&["connections", "request", "connection-id", "GET", "/profile"]);
+    assert_eq!(
+        (method.as_str(), url.path()),
+        ("POST", "/runtime/connections/connection-id/request")
+    );
+    assert_eq!(
+        body,
+        json!({"method":"GET", "path":"/profile", "query":null, "body":null})
+    );
+}
