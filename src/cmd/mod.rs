@@ -11,5 +11,6 @@ pub mod posts;
 pub mod roles;
 pub mod runtime;
 pub mod saved;
+pub mod secrets;
 pub mod service_keys;
 pub mod webhooks;

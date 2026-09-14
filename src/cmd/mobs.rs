@@ -180,8 +180,10 @@ pub enum MobsCmd {
     },
     /// Change a mob's handle
     SetHandle { mob_id: String, handle: String },
-    /// Delete a mob
-    Delete { mob_id: String },
+    /// Archive a mob you own, preserving its content and visibility
+    Archive { mob_id: String },
+    /// Restore participation in a mob you own
+    Restore { mob_id: String },
     /// Upload a mob icon
     SetIcon { mob_id: String, file: PathBuf },
     /// Upload a mob background image
@@ -373,7 +375,12 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             &format!("/mobs/{}/handle", seg(&mob_id)),
             Some(json!({ "handle": handle })),
         )?),
-        MobsCmd::Delete { mob_id } => emit(api.delete(&format!("/mobs/{}", seg(&mob_id)))?),
+        MobsCmd::Archive { mob_id } => {
+            emit(api.post(&format!("/mobs/{}/archive", seg(&mob_id)), None)?)
+        }
+        MobsCmd::Restore { mob_id } => {
+            emit(api.post(&format!("/mobs/{}/restore", seg(&mob_id)), None)?)
+        }
         MobsCmd::SetIcon { mob_id, file } => {
             emit(api.upload(Method::PUT, &format!("/mobs/{}/icon", seg(&mob_id)), &file)?)
         }

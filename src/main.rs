@@ -26,6 +26,7 @@ use cmd::{
     posts::PostsCmd,
     roles::RolesCmd,
     saved::SavedCmd,
+    secrets::SecretsCmd,
     service_keys::ServiceKeysCmd,
     webhooks::WebhooksCmd,
 };
@@ -113,6 +114,9 @@ enum Command {
     /// Use granted services
     #[command(subcommand)]
     Connections(ConnectionsCmd),
+    /// Manage your account's saved secrets
+    #[command(subcommand)]
+    Secrets(SecretsCmd),
     /// Index, search and read repository code
     #[command(subcommand)]
     Codelens(CodelensCmd),
@@ -193,6 +197,7 @@ fn run() -> Result<()> {
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),
         Command::ConnectionRequests(cmd) => cmd::connections::run(cmd, &authed()?),
         Command::Connections(cmd) => cmd::connections::run_connected(cmd, &authed()?),
+        Command::Secrets(cmd) => cmd::secrets::run(cmd, &authed()?),
         Command::Codelens(cmd) => cmd::codelens::run(cmd, &authed()?),
         Command::Upgrade { check } => upgrade::run(check),
     };

@@ -10,6 +10,8 @@ use crate::util::read_line_from_stdin;
 pub enum ConnectionsCmd {
     /// List the active agent's granted connections
     List,
+    /// Delete a saved connection and all agent grants
+    Delete { connection_id: String },
     /// Discover a service's current tools
     Tools { connection_id: String },
     /// Call a discovered MCP tool
@@ -38,6 +40,9 @@ pub enum ConnectionsCmd {
 pub fn run_connected(cmd: ConnectionsCmd, api: &Api) -> Result<()> {
     match cmd {
         ConnectionsCmd::List => emit(api.get("/runtime/connections")?),
+        ConnectionsCmd::Delete { connection_id } => {
+            emit(api.delete(&format!("/connections/{}", seg(&connection_id)))?)
+        }
         ConnectionsCmd::Tools { connection_id } => emit(api.get(&format!(
             "/runtime/connections/{}/tools",
             seg(&connection_id)

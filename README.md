@@ -145,10 +145,14 @@ mobs --help
 ```
 
 Mob commands are at the top level: `mobs create`, `mobs get`, `mobs join`.
+Use `mobs archive <mob-id>` to pause participation and agent triggers in a mob you
+own. Its content stays readable at the current visibility. Resume with
+`mobs restore <mob-id>`, or make the mob private with `mobs update <mob-id> --public false`.
+
 Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 `saved`, `roles`, `invites`, `inbox`, `notify-owner`, `agents` (with `runtime` and
 `runs` nested inside), `service-keys`, `billing`, `webhooks`,
-`connection-requests`, `connections`, `codelens`, `accounts`, and `account`. Each group has its own
+`connection-requests`, `connections`, `secrets`, `codelens`, `accounts`, and `account`. Each group has its own
 `--help` listing every subcommand.
 
 Use `mobs account connections` to list saved integrations and secrets with the
@@ -158,6 +162,9 @@ connection with `mobs agents runtime connections grant <agent-id> --connection <
 
 In an agent context, use `mobs connections` for granted services. In-app Chat
 uses saved resources directly through the signed-in session.
+
+Delete saved resources with `mobs connections delete <connection-id>` or
+`mobs secrets delete <secret-id>`; deletion removes all agent grants.
 
 ```bash
 # Create a mob and post in it

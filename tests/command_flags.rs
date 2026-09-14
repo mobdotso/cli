@@ -111,6 +111,16 @@ fn request_with_response(
 }
 
 #[test]
+fn mob_archive_and_restore_use_lifecycle_routes() {
+    for action in ["archive", "restore"] {
+        let (method, url, body) = request(&[action, "mob-id"]);
+        assert_eq!(method, "POST");
+        assert_eq!(url.path(), format!("/mobs/mob-id/{action}"));
+        assert_eq!(body, Value::Null);
+    }
+}
+
+#[test]
 fn inline_connection_requests_use_stable_ids_and_secret_domains() {
     let (method, url, _) = request(&["connection-requests", "get", "request-id", "--by-id"]);
     assert_eq!(method, "GET");
@@ -631,4 +641,13 @@ fn connected_service_commands_use_agent_routes() {
         body,
         json!({"method":"GET", "path":"/profile", "query":null, "body":null})
     );
+}
+
+#[test]
+fn account_resource_deletion_uses_owner_routes() {
+    for (group, id) in [("secrets", "secret-id"), ("connections", "connection-id")] {
+        let (method, url, _) = request(&[group, "delete", id]);
+        assert_eq!(method, "DELETE");
+        assert_eq!(url.path(), format!("/{group}/{id}"));
+    }
 }
