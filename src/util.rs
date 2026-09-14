@@ -58,3 +58,19 @@ pub fn read_line_from_stdin(label: &str) -> Result<String> {
         .context("Could not read stdin")?;
     Ok(line.trim().to_string())
 }
+
+#[derive(clap::Args)]
+pub struct CursorArgs {
+    /// Records per page
+    #[arg(long, default_value_t = 6, value_parser = clap::value_parser!(u32).range(1..=50))]
+    pub limit: u32,
+    /// next_cursor from the previous response
+    #[arg(long, default_value = "")]
+    pub cursor: String,
+}
+
+impl CursorArgs {
+    pub fn query(self) -> Vec<(&'static str, String)> {
+        vec![("limit", self.limit.to_string()), ("cursor", self.cursor)]
+    }
+}

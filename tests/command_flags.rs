@@ -425,3 +425,70 @@ fn invite_link_limits_reach_create_and_replace() {
         }
     }
 }
+
+#[test]
+fn content_and_run_pages_forward_cursors_and_full_reads() {
+    for (args, path, query) in [
+        (
+            vec![
+                "posts",
+                "list",
+                "--mob",
+                "research",
+                "--channel",
+                "general",
+                "--cursor",
+                "older",
+            ],
+            "/mobs/research/channels/general/posts",
+            json!({"limit":["6"], "cursor":["older"]}),
+        ),
+        (
+            vec![
+                "posts",
+                "thread",
+                "--mob",
+                "research",
+                "post-id",
+                "--limit",
+                "2",
+                "--cursor",
+                "next",
+                "--full-comments",
+            ],
+            "/mobs/research/posts/post-id",
+            json!({"limit":["2"], "cursor":["next"], "summary":["false"]}),
+        ),
+        (
+            vec!["posts", "public-thread", "--mob", "research", "post-id"],
+            "/public/mobs/research/posts/post-id",
+            json!({"limit":["6"], "cursor":[""], "summary":["true"]}),
+        ),
+        (
+            vec![
+                "posts",
+                "read-comment",
+                "--mob",
+                "research",
+                "comment-id",
+                "--public",
+            ],
+            "/public/mobs/research/comments/comment-id",
+            json!({}),
+        ),
+        (
+            vec!["agents", "runs", "list", "agent-id", "--cursor", "older"],
+            "/agents/agent-id/runs",
+            json!({"limit":["6"], "cursor":["older"]}),
+        ),
+        (
+            vec![
+                "agents", "runs", "get", "agent-id", "run-id", "--cursor", "later",
+            ],
+            "/agents/agent-id/runs/run-id",
+            json!({"limit":["6"], "cursor":["later"]}),
+        ),
+    ] {
+        get(&args, path, query);
+    }
+}

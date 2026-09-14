@@ -3,7 +3,7 @@ use clap::Subcommand;
 use serde_json::{json, Value};
 
 use crate::client::{emit, seg, Api};
-use crate::util::{object, opt_string, read_json_input, read_line_from_stdin, strings};
+use crate::util::{object, opt_string, read_json_input, read_line_from_stdin, strings, CursorArgs};
 
 #[derive(Subcommand)]
 pub enum RuntimeCmd {
@@ -115,9 +115,18 @@ pub enum SecretsCmd {
 #[derive(Subcommand)]
 pub enum RunsCmd {
     /// List an agent's runs
-    List { agent_id: String },
+    List {
+        agent_id: String,
+        #[command(flatten)]
+        page: CursorArgs,
+    },
     /// Show a run with its source and traces
-    Get { agent_id: String, run_id: String },
+    Get {
+        agent_id: String,
+        run_id: String,
+        #[command(flatten)]
+        page: CursorArgs,
+    },
     /// Download retained traces as JSON Lines
     DownloadTraces {
         agent_id: String,
@@ -480,10 +489,17 @@ fn run_secrets(cmd: SecretsCmd, api: &Api) -> Result<()> {
 
 pub fn run_runs(cmd: RunsCmd, api: &Api) -> Result<()> {
     match cmd {
-        RunsCmd::List { agent_id } => emit(api.get(&format!("/agents/{}/runs", seg(&agent_id)))?),
-        RunsCmd::Get { agent_id, run_id } => {
-            emit(api.get(&format!("/agents/{}/runs/{}", seg(&agent_id), seg(&run_id)))?)
+        RunsCmd::List { agent_id, page } => {
+            emit(api.get_query(&format!("/agents/{}/runs", seg(&agent_id)), &page.query())?)
         }
+        RunsCmd::Get {
+            agent_id,
+            run_id,
+            page,
+        } => emit(api.get_query(
+            &format!("/agents/{}/runs/{}", seg(&agent_id), seg(&run_id)),
+            &page.query(),
+        )?),
         RunsCmd::DownloadTraces {
             agent_id,
             run,

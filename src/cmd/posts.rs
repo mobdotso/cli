@@ -6,7 +6,7 @@ use reqwest::Method;
 use serde_json::json;
 
 use crate::client::{emit, seg, Api};
-use crate::util::strings;
+use crate::util::{strings, CursorArgs};
 
 #[derive(Subcommand)]
 pub enum PostsCmd {
@@ -16,6 +16,8 @@ pub enum PostsCmd {
         mob: String,
         #[arg(long)]
         channel: String,
+        #[command(flatten)]
+        page: CursorArgs,
     },
     /// Create a post
     Create {
@@ -36,6 +38,30 @@ pub enum PostsCmd {
         #[arg(long)]
         mob: String,
         post_id: String,
+        #[command(flatten)]
+        page: CursorArgs,
+        /// Include full comment bodies on this page
+        #[arg(long)]
+        full_comments: bool,
+    },
+    /// Read a public post with a page of comments
+    PublicThread {
+        #[arg(long)]
+        mob: String,
+        post_id: String,
+        #[command(flatten)]
+        page: CursorArgs,
+        #[arg(long)]
+        full_comments: bool,
+    },
+    /// Read a complete comment body
+    ReadComment {
+        #[arg(long)]
+        mob: String,
+        comment_id: String,
+        /// Read from a public channel
+        #[arg(long)]
+        public: bool,
     },
     /// Read or change a post's link access
     Sharing {
@@ -97,11 +123,10 @@ pub enum PostsCmd {
 
 pub fn run(cmd: PostsCmd, api: &Api) -> Result<()> {
     match cmd {
-        PostsCmd::List { mob, channel } => emit(api.get(&format!(
-            "/mobs/{}/channels/{}/posts",
-            seg(&mob),
-            seg(&channel)
-        ))?),
+        PostsCmd::List { mob, channel, page } => emit(api.get_query(
+            &format!("/mobs/{}/channels/{}/posts", seg(&mob), seg(&channel)),
+            &page.query(),
+        )?),
         PostsCmd::Create {
             mob,
             channel,
@@ -116,9 +141,42 @@ pub fn run(cmd: PostsCmd, api: &Api) -> Result<()> {
                 "attachment_ids": strings(&attachments),
             })),
         )?),
-        PostsCmd::Thread { mob, post_id } => {
-            emit(api.get(&format!("/mobs/{}/posts/{}", seg(&mob), seg(&post_id)))?)
+        PostsCmd::Thread {
+            mob,
+            post_id,
+            page,
+            full_comments,
+        } => {
+            let mut query = page.query();
+            query.push(("summary", (!full_comments).to_string()));
+            emit(api.get_query(
+                &format!("/mobs/{}/posts/{}", seg(&mob), seg(&post_id)),
+                &query,
+            )?)
         }
+        PostsCmd::PublicThread {
+            mob,
+            post_id,
+            page,
+            full_comments,
+        } => {
+            let mut query = page.query();
+            query.push(("summary", (!full_comments).to_string()));
+            emit(api.get_query(
+                &format!("/public/mobs/{}/posts/{}", seg(&mob), seg(&post_id)),
+                &query,
+            )?)
+        }
+        PostsCmd::ReadComment {
+            mob,
+            comment_id,
+            public,
+        } => emit(api.get(&format!(
+            "{}/mobs/{}/comments/{}",
+            if public { "/public" } else { "" },
+            seg(&mob),
+            seg(&comment_id)
+        ))?),
         PostsCmd::Sharing {
             mob,
             post_id,

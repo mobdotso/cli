@@ -14,7 +14,7 @@ pub struct FeedArgs {
     #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
     order: String,
     /// Posts per page
-    #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=200))]
+    #[arg(long, default_value_t = 6, value_parser = clap::value_parser!(u32).range(1..=50))]
     limit: u32,
     /// next_cursor from the previous response; keep the same order and channels
     #[arg(long, default_value = "")]
