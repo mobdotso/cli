@@ -25,7 +25,7 @@ pub enum PostsCmd {
         mob: String,
         #[arg(long)]
         channel: String,
-        #[arg(long, default_value = "")]
+        #[arg(long, value_parser = post_title)]
         title: String,
         #[arg(long, default_value = "")]
         body: String,
@@ -119,6 +119,14 @@ pub enum PostsCmd {
         mob: String,
         comment_id: String,
     },
+}
+
+fn post_title(value: &str) -> Result<String, String> {
+    let title = value.trim();
+    if title.is_empty() || title.chars().count() > 200 {
+        return Err("Title must contain 1 to 200 characters".to_string());
+    }
+    Ok(title.to_string())
 }
 
 pub fn run(cmd: PostsCmd, api: &Api) -> Result<()> {

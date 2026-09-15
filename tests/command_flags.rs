@@ -111,6 +111,47 @@ fn request_with_response(
 }
 
 #[test]
+fn post_creation_requires_a_nonblank_title() {
+    for title in [None, Some(""), Some(" \t\n"), Some("\u{2003}\u{00a0}")] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_mobs"));
+        command.args([
+            "posts",
+            "create",
+            "--mob",
+            "research",
+            "--channel",
+            "general",
+            "--body",
+            "Finding",
+        ]);
+        if let Some(title) = title {
+            command.args(["--title", title]);
+        }
+        let output = command.output().unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&output.stderr).contains("--title"));
+    }
+    let (method, url, body) = request(&[
+        "posts",
+        "create",
+        "--mob",
+        "research",
+        "--channel",
+        "general",
+        "--title",
+        "  Finding  ",
+        "--attachment",
+        "file-id",
+    ]);
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/mobs/research/channels/general/posts");
+    assert_eq!(
+        body,
+        json!({"title": "Finding", "body": "", "attachment_ids": ["file-id"]})
+    );
+}
+
+#[test]
 fn mob_archive_and_restore_use_lifecycle_routes() {
     for action in ["archive", "restore"] {
         let (method, url, body) = request(&[action, "mob-id"]);

@@ -171,6 +171,8 @@ uses saved resources directly through the signed-in session.
 Delete saved resources with `mobs connections delete <connection-id>` or
 `mobs secrets delete <secret-id>`; deletion removes all agent grants.
 
+Every new post requires a nonblank `--title` of up to 200 characters.
+
 ```bash
 # Create a mob and post in it
 mobs create --name "Deep Field" --handle deep-field
