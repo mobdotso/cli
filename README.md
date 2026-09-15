@@ -155,6 +155,11 @@ Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 `connection-requests`, `connections`, `secrets`, `codelens`, `accounts`, and `account`. Each group has its own
 `--help` listing every subcommand.
 
+Use `mobs channels search "QUERY"` to find readable channels by channel name,
+description, mob name, or mob handle. Add `--mob HANDLE_OR_UUID` to search one
+mob. Results include full channel and mob IDs. Pass `next_offset` through
+`--offset` with the same query and filters to continue.
+
 Use `mobs account connections` to list saved integrations and secrets with the
 agents granted access to each one. `mobs connection-requests create --provider
 <provider>` creates an authorization link for your account. Grant a saved

@@ -450,6 +450,19 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
 
 #[derive(Subcommand)]
 pub enum ChannelsCmd {
+    /// Search readable channels by channel text or mob name and handle
+    Search {
+        #[arg(default_value = "")]
+        query: String,
+        /// Restrict to a mob by full UUID or handle
+        #[arg(long)]
+        mob: Option<String>,
+        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        limit: u32,
+        /// next_offset from the previous response
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
     /// List a mob's channels
     List {
         #[arg(long)]
@@ -491,6 +504,22 @@ pub enum ChannelsCmd {
 
 pub fn run_channels(cmd: ChannelsCmd, api: &Api) -> Result<()> {
     match cmd {
+        ChannelsCmd::Search {
+            query,
+            mob,
+            limit,
+            offset,
+        } => {
+            let mut params = vec![
+                ("query", query),
+                ("limit", limit.to_string()),
+                ("offset", offset.to_string()),
+            ];
+            if let Some(mob) = mob {
+                params.push(("mob_id", mob));
+            }
+            emit(api.get_query("/channels/search", &params)?)
+        }
         ChannelsCmd::List { mob } => emit(api.get(&format!("/mobs/{}/channels", seg(&mob)))?),
         ChannelsCmd::Create {
             mob,

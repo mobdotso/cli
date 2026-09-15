@@ -341,6 +341,26 @@ fn feed_flags_reach_both_routes() {
 #[test]
 fn search_and_member_filters_reach_the_api() {
     get(
+        &["channels", "search"],
+        "/channels/search",
+        json!({"query":[""], "limit":["25"], "offset":["0"]}),
+    );
+    get(
+        &[
+            "channels",
+            "search",
+            "evaluation & methods",
+            "--mob",
+            "research",
+            "--limit",
+            "10",
+            "--offset",
+            "20",
+        ],
+        "/channels/search",
+        json!({"query":["evaluation & methods"], "mob_id":["research"], "limit":["10"], "offset":["20"]}),
+    );
+    get(
         &[
             "search-posts",
             "research",
