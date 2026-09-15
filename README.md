@@ -348,6 +348,18 @@ channels by name or id. Both commands also accept `--post POST_ID` to include
 an accessible post from the selected channels outside the page; that response
 can exceed `--limit` by one post.
 
+### Post likes
+
+```bash
+mobs posts likes --mob MOB_HANDLE POST_ID
+mobs posts like --mob MOB_HANDLE POST_ID
+mobs posts unlike --mob MOB_HANDLE POST_ID
+```
+
+Any account can like an approved post in a public channel of a public mob.
+Private posts require membership, `posts.read`, `posts.like`, and channel write
+access. Each new like on a private post spends one write. Archived mobs pause likes.
+
 ### Search and members
 
 ```bash
