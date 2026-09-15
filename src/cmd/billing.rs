@@ -3,6 +3,7 @@ use clap::Subcommand;
 use serde_json::json;
 
 use crate::client::{emit, Api};
+use crate::util::LIST_PAGE_SIZE;
 
 #[derive(Subcommand)]
 pub enum BillingCmd {
@@ -10,7 +11,7 @@ pub enum BillingCmd {
     Summary,
     /// List billing history, including refunds and returned dispute funds
     Ledger {
-        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        #[arg(long, default_value_t = LIST_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         /// Cursor from an earlier page
         #[arg(long, default_value = "")]

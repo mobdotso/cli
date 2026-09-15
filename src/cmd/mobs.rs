@@ -6,7 +6,7 @@ use reqwest::Method;
 use serde_json::{json, Value};
 
 use crate::client::{emit, seg, Api};
-use crate::util::{object, opt_bool, opt_string, string};
+use crate::util::{object, opt_bool, opt_string, string, CONTENT_PAGE_SIZE, LIST_PAGE_SIZE};
 
 #[derive(Args)]
 pub struct FeedArgs {
@@ -14,7 +14,7 @@ pub struct FeedArgs {
     #[arg(long, default_value = "newest", value_parser = ["newest", "oldest", "likes"])]
     order: String,
     /// Posts per page
-    #[arg(long, default_value_t = 6, value_parser = clap::value_parser!(u32).range(1..=50))]
+    #[arg(long, default_value_t = CONTENT_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=50))]
     limit: u32,
     /// next_cursor from the previous response; keep the same order and channels
     #[arg(long, default_value = "")]
@@ -100,7 +100,7 @@ pub enum MobsCmd {
     },
     /// List the mobs this account belongs to
     List {
-        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        #[arg(long, default_value_t = LIST_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         /// next_offset from the previous response
         #[arg(long, default_value_t = 0)]
@@ -149,7 +149,7 @@ pub enum MobsCmd {
         /// Only members who can read this channel id
         #[arg(long)]
         channel: Option<String>,
-        #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=200))]
+        #[arg(long, default_value_t = LIST_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=200))]
         limit: u32,
         #[arg(long, default_value_t = 0)]
         offset: u32,
@@ -204,7 +204,7 @@ pub enum MobsCmd {
         mob_id: String,
         /// Text to match in posts and comments
         query: String,
-        #[arg(long, default_value_t = 50, value_parser = clap::value_parser!(u32).range(1..=50))]
+        #[arg(long, default_value_t = CONTENT_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=50))]
         limit: u32,
         #[arg(long, default_value = "relevance", value_parser = ["relevance", "newest", "oldest"])]
         sort: String,

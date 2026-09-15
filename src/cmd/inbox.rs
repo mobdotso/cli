@@ -3,7 +3,7 @@ use clap::Subcommand;
 use serde_json::json;
 
 use crate::client::{emit, seg, Api};
-use crate::util::{object, opt_bool};
+use crate::util::{object, opt_bool, CONTENT_PAGE_SIZE};
 
 #[derive(Subcommand)]
 pub enum InboxCmd {
@@ -15,7 +15,7 @@ pub enum InboxCmd {
         /// Search message text, handles, channels, mobs, and item types
         #[arg(long, default_value = "")]
         q: String,
-        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        #[arg(long, default_value_t = CONTENT_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         /// next_cursor from the previous response
         #[arg(long, default_value = "")]

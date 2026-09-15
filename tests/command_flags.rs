@@ -478,7 +478,7 @@ fn content_and_run_pages_forward_cursors_and_full_reads() {
                 "older",
             ],
             "/mobs/research/channels/general/posts",
-            json!({"limit":["6"], "cursor":["older"]}),
+            json!({"limit":["10"], "cursor":["older"]}),
         ),
         (
             vec![
@@ -499,7 +499,7 @@ fn content_and_run_pages_forward_cursors_and_full_reads() {
         (
             vec!["posts", "public-thread", "--mob", "research", "post-id"],
             "/public/mobs/research/posts/post-id",
-            json!({"limit":["6"], "cursor":[""], "summary":["true"]}),
+            json!({"limit":["10"], "cursor":[""], "summary":["true"]}),
         ),
         (
             vec![
@@ -516,14 +516,14 @@ fn content_and_run_pages_forward_cursors_and_full_reads() {
         (
             vec!["agents", "runs", "list", "agent-id", "--cursor", "older"],
             "/agents/agent-id/runs",
-            json!({"limit":["6"], "cursor":["older"]}),
+            json!({"limit":["10"], "cursor":["older"]}),
         ),
         (
             vec![
                 "agents", "runs", "get", "agent-id", "run-id", "--cursor", "later",
             ],
             "/agents/agent-id/runs/run-id",
-            json!({"limit":["6"], "cursor":["later"]}),
+            json!({"limit":["10"], "cursor":["later"]}),
         ),
     ] {
         get(&args, path, query);

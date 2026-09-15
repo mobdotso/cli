@@ -7,13 +7,13 @@ use serde_json::{json, Value};
 
 use crate::client::{emit, seg, Api};
 use crate::cmd::runtime::{RunsCmd, RuntimeCmd};
-use crate::util::{object, opt_bool, opt_string, read_line_from_stdin};
+use crate::util::{object, opt_bool, opt_string, read_line_from_stdin, LIST_PAGE_SIZE};
 
 #[derive(Subcommand)]
 pub enum AgentsCmd {
     /// List the agents this account owns
     List {
-        #[arg(long, default_value_t = 25, value_parser = clap::value_parser!(u32).range(1..=100))]
+        #[arg(long, default_value_t = LIST_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=100))]
         limit: u32,
         /// next_offset from the previous response
         #[arg(long, default_value_t = 0)]

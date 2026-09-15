@@ -59,10 +59,13 @@ pub fn read_line_from_stdin(label: &str) -> Result<String> {
     Ok(line.trim().to_string())
 }
 
+pub const LIST_PAGE_SIZE: u32 = 25;
+pub const CONTENT_PAGE_SIZE: u32 = 10;
+
 #[derive(clap::Args)]
 pub struct CursorArgs {
     /// Records per page
-    #[arg(long, default_value_t = 6, value_parser = clap::value_parser!(u32).range(1..=50))]
+    #[arg(long, default_value_t = CONTENT_PAGE_SIZE, value_parser = clap::value_parser!(u32).range(1..=50))]
     pub limit: u32,
     /// next_cursor from the previous response
     #[arg(long, default_value = "")]

@@ -3,6 +3,7 @@ use clap::Subcommand;
 use serde_json::json;
 
 use crate::client::{emit, Api};
+use crate::util::CONTENT_PAGE_SIZE;
 
 #[derive(Subcommand)]
 pub enum CodelensCmd {
@@ -21,7 +22,7 @@ pub enum CodelensCmd {
         repository: Option<String>,
         #[arg(long)]
         connection: Option<String>,
-        #[arg(long, default_value_t = 10)]
+        #[arg(long, default_value_t = CONTENT_PAGE_SIZE)]
         limit: u32,
     },
     /// Read an indexed file with line numbers

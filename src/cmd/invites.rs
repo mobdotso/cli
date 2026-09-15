@@ -3,7 +3,7 @@ use clap::Subcommand;
 use serde_json::json;
 
 use crate::client::{emit, seg, Api};
-use crate::util::{read_line_from_stdin, strings};
+use crate::util::{read_line_from_stdin, strings, LIST_PAGE_SIZE};
 
 #[derive(Subcommand)]
 pub enum InvitesCmd {
@@ -53,7 +53,7 @@ pub enum InviteLinksCmd {
     List {
         #[arg(long)]
         mob: String,
-        #[arg(long, default_value_t = 50)]
+        #[arg(long, default_value_t = LIST_PAGE_SIZE)]
         limit: u32,
         #[arg(long, default_value_t = 0)]
         offset: u32,
