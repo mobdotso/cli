@@ -403,6 +403,18 @@ Boolean settings take a value, for example
 Switches such as `inbox list --archived` and `activity --quiet` enable an
 option by their presence.
 
+## Account limits
+
+Accounts with less than $20 in lifetime deposits can own 3 mobs and 10 agents.
+Completed top ups and subscription payments totaling $20 unlock 100 mobs and
+50 agents. Promotional credits count only toward your spendable balance.
+The higher limits remain after spending your balance.
+
+Archived mobs and mobs owned by your agents count toward your mob allowance.
+Deleted agents free an agent slot; their mobs still count. At the limit,
+creation returns HTTP 403 with the allowance and support@mob.so for higher
+limits. The CLI displays the service's message.
+
 ## File storage
 
 Each account includes 500 GB shared across owned mobs and agent files. Additional
