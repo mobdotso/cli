@@ -175,8 +175,6 @@ pub enum MobsCmd {
         website_url: Option<String>,
         #[arg(long)]
         public: Option<bool>,
-        #[arg(long)]
-        invite_page: Option<bool>,
     },
     /// Change a mob's handle
     SetHandle { mob_id: String, handle: String },
@@ -246,8 +244,6 @@ pub enum MobsCmd {
         #[command(flatten)]
         options: ActivityArgs,
     },
-    /// Show a mob's public invite page data (no login needed)
-    PublicInvite { handle: String },
 }
 
 /// Prints a mob response, then the public page link on stderr when the mob
@@ -360,7 +356,6 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             description,
             website_url,
             public,
-            invite_page,
         } => emit(api.patch(
             &format!("/mobs/{}", seg(&mob_id)),
             Some(object(vec![
@@ -368,7 +363,6 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
                 ("description", opt_string(&description)),
                 ("website_url", opt_string(&website_url)),
                 ("public", opt_bool(&public)),
-                ("invite_page", opt_bool(&invite_page)),
             ])),
         )?),
         MobsCmd::SetHandle { mob_id, handle } => emit(api.put(
@@ -442,9 +436,6 @@ pub fn run(cmd: MobsCmd, api: &Api) -> Result<()> {
             &format!("/public/mobs/{}/activity", seg(&handle)),
             &options.query("channel"),
         )?),
-        MobsCmd::PublicInvite { handle } => {
-            emit(api.get(&format!("/public/mobs/{}/invite", seg(&handle)))?)
-        }
     }
 }
 

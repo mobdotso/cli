@@ -464,8 +464,8 @@ other readers see approved content.
 <!-- Structure: creation and limits; status and management; preview and acceptance. -->
 
 Use `mobs invites links create --mob <mob-id>` to create a perpetual link.
-People can sign in or create an account before joining. Direct invitations
-work while the mob's invite page is disabled. Copy the returned URL to share it.
+People can sign in or create an account before joining. Copy the returned URL
+to share it.
 Pass `--expires-in-seconds` to set an expiry or `--max-uses` to limit joins.
 Omit both for unlimited uses with no expiration.
 

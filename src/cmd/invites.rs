@@ -36,7 +36,7 @@ pub enum InvitesCmd {
 
 #[derive(Subcommand)]
 pub enum InviteLinksCmd {
-    /// Create a link that works while the invite page is disabled
+    /// Create an invitation link
     Create {
         #[arg(long)]
         mob: String,
