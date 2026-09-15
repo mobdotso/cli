@@ -3,7 +3,7 @@ use clap::Subcommand;
 use serde_json::json;
 
 use crate::client::{emit, seg, Api};
-use crate::util::{read_line_from_stdin, strings, LIST_PAGE_SIZE};
+use crate::util::{read_line_from_stdin, LIST_PAGE_SIZE};
 
 #[derive(Subcommand)]
 pub enum InvitesCmd {
@@ -22,9 +22,6 @@ pub enum InvitesCmd {
         mob: String,
         /// Handle to invite
         handle: String,
-        /// Role id the invite assigns on acceptance (repeatable)
-        #[arg(long = "role")]
-        roles: Vec<String>,
     },
     /// Revoke a pending invite
     Revoke {
@@ -40,14 +37,6 @@ pub enum InviteLinksCmd {
     Create {
         #[arg(long)]
         mob: String,
-        #[arg(long = "role")]
-        roles: Vec<String>,
-        /// Expire after this many seconds; omit for no expiration
-        #[arg(long, value_parser = clap::value_parser!(u32).range(60..=2147483647))]
-        expires_in_seconds: Option<u32>,
-        /// Maximum number of joins; omit for unlimited uses
-        #[arg(long, value_parser = clap::value_parser!(u32).range(1..=2147483647))]
-        max_uses: Option<u32>,
     },
     /// List link status and history
     List {
@@ -70,19 +59,11 @@ pub enum InviteLinksCmd {
         mob: String,
         link_id: String,
     },
-    /// Revoke a pending link and create its replacement with these roles and limits
+    /// Revoke a pending link and create its replacement
     Replace {
         #[arg(long)]
         mob: String,
         link_id: String,
-        #[arg(long = "role")]
-        roles: Vec<String>,
-        /// Expire after this many seconds; omit for no expiration
-        #[arg(long, value_parser = clap::value_parser!(u32).range(60..=2147483647))]
-        expires_in_seconds: Option<u32>,
-        /// Maximum number of joins; omit for unlimited uses
-        #[arg(long, value_parser = clap::value_parser!(u32).range(1..=2147483647))]
-        max_uses: Option<u32>,
     },
     /// Preview a link; reads the token after #token= from stdin
     Preview,
@@ -96,18 +77,9 @@ pub enum InviteLinksCmd {
 
 fn links(cmd: InviteLinksCmd, api: &Api) -> Result<()> {
     match cmd {
-        InviteLinksCmd::Create {
-            mob,
-            roles,
-            expires_in_seconds,
-            max_uses,
-        } => emit(api.post(
+        InviteLinksCmd::Create { mob } => emit(api.post(
             &format!("/mobs/{}/invite-links", seg(&mob)),
-            Some(json!({
-                "role_ids": strings(&roles),
-                "expires_in_seconds": expires_in_seconds,
-                "max_uses": max_uses,
-            })),
+            Some(json!({})),
         )?),
         InviteLinksCmd::List { mob, limit, offset } => emit(api.get(&format!(
             "/mobs/{}/invite-links?limit={limit}&offset={offset}",
@@ -123,19 +95,9 @@ fn links(cmd: InviteLinksCmd, api: &Api) -> Result<()> {
             seg(&mob),
             seg(&link_id)
         ))?),
-        InviteLinksCmd::Replace {
-            mob,
-            link_id,
-            roles,
-            expires_in_seconds,
-            max_uses,
-        } => emit(api.post(
+        InviteLinksCmd::Replace { mob, link_id } => emit(api.post(
             &format!("/mobs/{}/invite-links/{}/replace", seg(&mob), seg(&link_id)),
-            Some(json!({
-                "role_ids": strings(&roles),
-                "expires_in_seconds": expires_in_seconds,
-                "max_uses": max_uses,
-            })),
+            Some(json!({})),
         )?),
         InviteLinksCmd::Preview => {
             let token = read_line_from_stdin("Invitation token")?;
@@ -164,9 +126,9 @@ pub fn run(cmd: InvitesCmd, api: &Api) -> Result<()> {
         InvitesCmd::Decline { invite_id } => {
             emit(api.post(&format!("/invites/{}/decline", seg(&invite_id)), None)?)
         }
-        InvitesCmd::Create { mob, handle, roles } => emit(api.post(
+        InvitesCmd::Create { mob, handle } => emit(api.post(
             &format!("/mobs/{}/invites", seg(&mob)),
-            Some(json!({ "handle": handle, "role_ids": strings(&roles) })),
+            Some(json!({ "handle": handle })),
         )?),
         InvitesCmd::Revoke { mob, invite_id } => {
             emit(api.delete(&format!("/mobs/{}/invites/{}", seg(&mob), seg(&invite_id)))?)

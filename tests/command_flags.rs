@@ -495,32 +495,23 @@ fn channel_visibility_accepts_false_and_defaults_to_true() {
 }
 
 #[test]
-fn invite_link_limits_reach_create_and_replace() {
+fn invitations_use_the_mob_default_role() {
+    let (method, url, body) = request(&["invites", "create", "--mob", "research", "researcher"]);
+    assert_eq!(method, "POST");
+    assert_eq!(url.path(), "/mobs/research/invites");
+    assert_eq!(body, json!({"handle": "researcher"}));
     for command in ["create", "replace"] {
-        for limited in [false, true] {
-            let mut args = vec!["invites", "links", command, "--mob", "research"];
-            let suffix = if command == "replace" {
-                args.push("link-id");
-                "/link-id/replace"
-            } else {
-                ""
-            };
-            args.extend(["--role", "role-id"]);
-            if limited {
-                args.extend(["--expires-in-seconds", "3600", "--max-uses", "2"]);
-            }
-            let (method, url, body) = request(&args);
-            assert_eq!(method, "POST");
-            assert_eq!(url.path(), format!("/mobs/research/invite-links{suffix}"));
-            assert_eq!(
-                body,
-                json!({
-                    "role_ids": ["role-id"],
-                    "expires_in_seconds": if limited { Some(3600) } else { None },
-                    "max_uses": if limited { Some(2) } else { None },
-                })
-            );
-        }
+        let mut args = vec!["invites", "links", command, "--mob", "research"];
+        let suffix = if command == "replace" {
+            args.push("link-id");
+            "/link-id/replace"
+        } else {
+            ""
+        };
+        let (method, url, body) = request(&args);
+        assert_eq!(method, "POST");
+        assert_eq!(url.path(), format!("/mobs/research/invite-links{suffix}"));
+        assert_eq!(body, json!({}));
     }
 }
 
