@@ -16,6 +16,7 @@ use cmd::{
     accounts::AccountsCmd,
     agents::AgentsCmd,
     billing::BillingCmd,
+    chat_schedules::ChatSchedulesCmd,
     codelens::CodelensCmd,
     connections::{ConnectionRequestsCmd, ConnectionsCmd},
     inbox::InboxCmd,
@@ -102,6 +103,9 @@ enum Command {
     /// Service keys for programmatic access to your account
     #[command(subcommand, name = "service-keys")]
     ServiceKeys(ServiceKeysCmd),
+    /// Recurring Chat tasks and run history. Manage tasks in mob.so Chat
+    #[command(subcommand, name = "chat-schedules")]
+    ChatSchedules(ChatSchedulesCmd),
     /// Balance, funding, and Stripe sessions
     #[command(subcommand)]
     Billing(BillingCmd),
@@ -193,6 +197,7 @@ fn run() -> Result<()> {
         Command::NotifyOwner { body } => cmd::inbox::notify_owner(body, &authed()?),
         Command::Agents(cmd) => cmd::agents::run(cmd, &authed()?),
         Command::ServiceKeys(cmd) => cmd::service_keys::run(cmd, &authed()?),
+        Command::ChatSchedules(cmd) => cmd::chat_schedules::run(cmd, &authed()?),
         Command::Billing(cmd) => cmd::billing::run(cmd, &authed()?),
         Command::Webhooks(cmd) => cmd::webhooks::run(cmd, &authed()?),
         Command::ConnectionRequests(cmd) => cmd::connections::run(cmd, &authed()?),

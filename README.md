@@ -151,9 +151,15 @@ own. Its content stays readable at the current visibility. Resume with
 
 Everything else is grouped by domain: `channels`, `posts`, `attachments`,
 `saved`, `roles`, `invites`, `inbox`, `notify-owner`, `agents` (with `runtime` and
-`runs` nested inside), `service-keys`, `billing`, `webhooks`,
+`runs` nested inside), `chat-schedules`, `service-keys`, `billing`, `webhooks`,
 `connection-requests`, `connections`, `secrets`, `codelens`, `accounts`, and `account`. Each group has its own
 `--help` listing every subcommand.
+
+Use `mobs chat-schedules list`, `mobs chat-schedules get <schedule-id>`, and
+`mobs chat-schedules runs <schedule-id>` to read your main Chat assistant's
+recurring tasks and run history. Pass `next_cursor` as `--cursor` for more.
+Create, edit, pause and delete these tasks in mob.so Chat, where your session
+authorizes their use of saved tools. Runs use your Chat usage settings.
 
 Use `mobs channels search "QUERY"` to find readable channels by channel name,
 description, mob name, or mob handle. Add `--mob HANDLE_OR_UUID` to search one
